@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUser(null);
       }
-    } catch (err) {
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
@@ -101,8 +101,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { success: true };
         }
         return { success: false, error: data.error || "Login validation failed" };
-      } catch (err: any) {
-        return { success: false, error: err.message || "Firebase Login failed" };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Firebase Login failed";
+        return { success: false, error: message };
       }
     }
 
@@ -120,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: true };
       }
       return { success: false, error: data.error || "Login failed" };
-    } catch (err) {
+    } catch {
       return { success: false, error: "An unexpected error occurred" };
     }
   };
@@ -145,8 +146,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { success: true };
         }
         return { success: false, error: data.error || "Signup validation failed" };
-      } catch (err: any) {
-        return { success: false, error: err.message || "Firebase Signup failed" };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Firebase Signup failed";
+        return { success: false, error: message };
       }
     }
 
@@ -164,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: true };
       }
       return { success: false, error: data.error || "Signup failed" };
-    } catch (err) {
+    } catch {
       return { success: false, error: "An unexpected error occurred" };
     }
   };
@@ -206,11 +208,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { success: true };
         }
         return { success: false, error: data.error || "Login validation failed" };
-      } catch (err: any) {
-        if (err.code === "auth/popup-closed-by-user") {
+      } catch (err) {
+        const error = err as { code?: string; message?: string };
+        if (error.code === "auth/popup-closed-by-user") {
           return { success: false, error: "Sign-in cancelled by user." };
         }
-        return { success: false, error: err.message || "Google Sign-In failed" };
+        return { success: false, error: error.message || "Google Sign-In failed" };
       }
     }
     return { success: false, error: "Firebase is not configured." };

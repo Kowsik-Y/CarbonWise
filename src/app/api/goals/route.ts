@@ -9,6 +9,7 @@ import {
   addAchievement 
 } from "@/services/db-service";
 import { z } from "zod";
+import { Goal } from "@/types";
 
 const createGoalSchema = z.object({
   title: z.string().min(2),
@@ -46,7 +47,7 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
 
     // Limit active goals to 10
     const goalsList = await getUserGoals(userId);
-    const activeCount = goalsList.filter((g: any) => g.status === "ACTIVE").length;
+    const activeCount = goalsList.filter((g: Goal) => g.status === "ACTIVE").length;
 
     if (activeCount >= 10) {
       return NextResponse.json(
@@ -81,7 +82,7 @@ export const PATCH = withAuth(async (req: NextRequest, { userId }) => {
     const { id, status } = validation.data;
 
     const goalsList = await getUserGoals(userId);
-    const goal = goalsList.find((g: any) => g.id === id);
+    const goal = goalsList.find((g: Goal) => g.id === id);
 
     if (!goal) {
       return NextResponse.json({ error: "Goal not found" }, { status: 404 });
@@ -113,7 +114,7 @@ export const PATCH = withAuth(async (req: NextRequest, { userId }) => {
 
         // Unlock achievement for first completed goal
         const listAfterUpdate = await getUserGoals(userId);
-        const completedCount = listAfterUpdate.filter((g: any) => g.status === "COMPLETED").length;
+        const completedCount = listAfterUpdate.filter((g: Goal) => g.status === "COMPLETED").length;
 
         if (completedCount === 1) {
           await addAchievement(userId, "First Steps", "Successfully completed your first reduction goal", "target");

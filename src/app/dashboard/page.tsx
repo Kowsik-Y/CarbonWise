@@ -8,12 +8,27 @@ import { Button } from "@/components/ui/button";
 import { DashboardCharts } from "@/features/dashboard/dashboard-charts";
 import { getCarbonEquivalents } from "@/utils/carbon-calculator";
 import { BarChart2, Leaf, Target, Award, ArrowRight, Activity, Calendar, Zap, Sparkles } from "lucide-react";
+import { CarbonAssessment, Goal, Achievement } from "@/types";
+
+interface DashboardData {
+  latestAssessment: CarbonAssessment;
+  assessmentsHistory: CarbonAssessment[];
+  goals: {
+    active: Goal[];
+    completedCount: number;
+  };
+  challenges: {
+    activeCount: number;
+    completedCount: number;
+  };
+  achievements: Achievement[];
+}
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
@@ -238,7 +253,7 @@ export default function DashboardPage() {
 
             {goals.active.length > 0 ? (
               <div className="space-y-3 mt-4">
-                {goals.active.slice(0, 3).map((goal: any) => (
+                {goals.active.slice(0, 3).map((goal: Goal) => (
                   <div
                     key={goal.id}
                     className="flex justify-between items-center rounded-xl bg-white/3 border border-white/5 p-3.5"
@@ -277,7 +292,7 @@ export default function DashboardPage() {
 
             {achievements.length > 0 ? (
               <div className="grid grid-cols-4 gap-3 mt-4">
-                {achievements.slice(0, 8).map((badge: any) => (
+                {achievements.slice(0, 8).map((badge: Achievement) => (
                   <div
                     key={badge.id}
                     title={`${badge.title}: ${badge.description}`}

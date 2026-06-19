@@ -8,6 +8,7 @@ import {
   getUserChallenges, 
   getUserAchievements 
 } from "@/services/db-service";
+import { Goal, UserChallenge, Achievement } from "@/types";
 
 export const GET = withAuth(async (req: NextRequest, { userId }) => {
   try {
@@ -28,17 +29,17 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
 
     // 4. Fetch goals stats
     const goalsList = await getUserGoals(userId);
-    const activeGoals = goalsList.filter((g: any) => g.status === "ACTIVE");
-    const completedGoalsCount = goalsList.filter((g: any) => g.status === "COMPLETED").length;
+    const activeGoals = goalsList.filter((g: Goal) => g.status === "ACTIVE");
+    const completedGoalsCount = goalsList.filter((g: Goal) => g.status === "COMPLETED").length;
 
     // 5. Fetch challenges stats
     const challengesList = await getUserChallenges(userId);
-    const joinedChallenges = challengesList.filter((uc: any) => uc.status === "JOINED");
-    const completedChallengesCount = challengesList.filter((uc: any) => uc.status === "COMPLETED").length;
+    const joinedChallenges = challengesList.filter((uc: UserChallenge) => uc.status === "JOINED");
+    const completedChallengesCount = challengesList.filter((uc: UserChallenge) => uc.status === "COMPLETED").length;
 
     // 6. Fetch achievements
     const achievements = await getUserAchievements(userId);
-    achievements.sort((a: any, b: any) => b.unlockedAt.getTime() - a.unlockedAt.getTime());
+    achievements.sort((a: Achievement, b: Achievement) => new Date(b.unlockedAt).getTime() - new Date(a.unlockedAt).getTime());
 
     return NextResponse.json({
       user,

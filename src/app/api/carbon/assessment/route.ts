@@ -11,6 +11,7 @@ import {
   deleteAssessments
 } from "@/services/db-service";
 import { z } from "zod";
+import { CarbonAssessment } from "@/types";
 
 const assessmentSchema = z.object({
   transportKm: z.number().min(0),
@@ -68,7 +69,7 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
 
     // Check if it's user's first assessment to award bonus points
     const history = await getAssessmentsHistory(userId);
-    const previousAssessmentsCount = history.filter((a: any) => a.id !== assessment.id).length;
+    const previousAssessmentsCount = history.filter((a: CarbonAssessment) => a.id !== assessment.id).length;
 
     let pointsAwarded = 0;
     if (previousAssessmentsCount === 0) {

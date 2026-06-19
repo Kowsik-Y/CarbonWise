@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { calculateCarbonFootprint, getCarbonEquivalents } from "@/utils/carbon-calculator";
 import { Sliders, Leaf, ShieldAlert, Check, Plus, AlertCircle, Compass, Sparkles } from "lucide-react";
+import { CarbonAssessment } from "@/types";
 
 export default function SimulatorPage() {
   const { user, loading, showToast } = useAuth();
@@ -15,7 +16,7 @@ export default function SimulatorPage() {
 
   const [hasAssessment, setHasAssessment] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [originalAssessment, setOriginalAssessment] = useState<any>(null);
+  const [originalAssessment, setOriginalAssessment] = useState<CarbonAssessment | null>(null);
 
   // Simulated State
   const [simTransportKm, setSimTransportKm] = useState(25);
@@ -103,7 +104,7 @@ export default function SimulatorPage() {
     );
   }
 
-  if (!hasAssessment) {
+  if (!hasAssessment || !originalAssessment) {
     return (
       <div className="flex-1 grow flex items-center justify-center p-4 max-w-md mx-auto text-center">
         <GlassCard premium className="space-y-6">

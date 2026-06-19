@@ -88,3 +88,28 @@ export interface WeeklyReport {
   createdAt: Date | string;
 }
 
+export interface AssessmentInput {
+  transportKm: number;
+  transportType: string;
+  electricityBill: number;
+  foodHabits: string;
+  shoppingHabits: string;
+  wasteHabits: string;
+}
+
+export interface AIRecommendation {
+  title: string;
+  category: "transport" | "energy" | "food" | "shopping" | "waste";
+  co2: number;
+  diff: "easy" | "medium" | "hard";
+}
+
+export interface SimulatorOptimization {
+  targetTransportKm: number;
+  targetTransportType: string;
+  targetElectricityBill: number;
+  targetFoodHabits: string;
+  targetShoppingHabits: string;
+  targetWasteHabits: string;
+}
+

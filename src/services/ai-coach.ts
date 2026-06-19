@@ -1,5 +1,4 @@
-/* eslint-disable */
-import { CarbonAssessment } from "@/types";
+import { CarbonAssessment, AssessmentInput, Challenge, AIRecommendation, SimulatorOptimization } from "@/types";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export interface ChatMessage {
@@ -368,7 +367,7 @@ function cleanJson(str: string): string {
   return str.replace(/```json/i, "").replace(/```/g, "").trim();
 }
 
-export async function parseAssessmentFromText(text: string): Promise<any> {
+export async function parseAssessmentFromText(text: string): Promise<AssessmentInput> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (apiKey) {
     try {
@@ -431,7 +430,7 @@ Return ONLY a valid JSON object containing these keys. Do not include markdown c
   return { transportKm, transportType, electricityBill, foodHabits, shoppingHabits, wasteHabits };
 }
 
-export async function generateDynamicChallenges(assessment: CarbonAssessment | null): Promise<any[]> {
+export async function generateDynamicChallenges(assessment: CarbonAssessment | null): Promise<Challenge[]> {
   if (!assessment) return [];
 
   const {
@@ -491,7 +490,16 @@ Do not include any wrapping markdown formatting (like \`\`\`json) or extra text.
   }
 
   // --- LOCAL FALLBACK DYNAMIC CHALLENGES ---
-  const categories = [
+  const categories: Array<{
+    name: "transport" | "energy" | "food" | "shopping" | "waste";
+    value: number;
+    code: string;
+    title: string;
+    desc: string;
+    points: number;
+    duration: string;
+    difficulty: "easy" | "medium" | "hard";
+  }> = [
     { name: "transport", value: transportEmissions, code: "ai-transit-shift", title: "Transit Shift Week", desc: "Shift 3 commute trips this week from driving to public transit, cycling, or walking.", points: 150, duration: "7 days", difficulty: "medium" },
     { name: "energy", value: energyEmissions, code: "ai-unplug-standby", title: "Unplug Vampire Loads", desc: "Unplug all screen displays, game consoles, and chargers on standby at night for 5 days.", points: 100, duration: "5 days", difficulty: "easy" },
     { name: "food", value: foodEmissions, code: "ai-plant-based-week", title: "Plant-Based Weekdays", desc: "Commit to eating 100% vegetarian meals from Monday to Friday.", points: 180, duration: "5 days", difficulty: "medium" },
@@ -521,7 +529,7 @@ Do not include any wrapping markdown formatting (like \`\`\`json) or extra text.
   ];
 }
 
-export async function generateDynamicRecommendations(assessment: CarbonAssessment | null): Promise<any[]> {
+export async function generateDynamicRecommendations(assessment: CarbonAssessment | null): Promise<AIRecommendation[]> {
   if (!assessment) return [];
 
   const {
@@ -570,7 +578,13 @@ Do not include markdown code block syntax. Return only raw JSON.
   }
 
   // --- LOCAL FALLBACK RECOMMENDATIONS ---
-  const allRecs = [
+  const allRecs: Array<{
+    title: string;
+    category: "transport" | "energy" | "food" | "shopping" | "waste";
+    co2: number;
+    diff: "easy" | "medium" | "hard";
+    priority: number;
+  }> = [
     { title: "Carpool or ride transit 2 days/week", category: "transport", co2: 380, diff: "medium", priority: transportEmissions },
     { title: "Switch home lightbulbs to LEDs", category: "energy", co2: 120, diff: "easy", priority: energyEmissions },
     { title: "Implement Meatless Mondays", category: "food", co2: 150, diff: "easy", priority: foodEmissions },
@@ -583,7 +597,7 @@ Do not include markdown code block syntax. Return only raw JSON.
   return allRecs.slice(0, 3).map(({ title, category, co2, diff }) => ({ title, category, co2, diff }));
 }
 
-export async function generateSimulatorOptimization(assessment: CarbonAssessment | null): Promise<any> {
+export async function generateSimulatorOptimization(assessment: CarbonAssessment | null): Promise<SimulatorOptimization | null> {
   if (!assessment) return null;
 
   const {

@@ -12,6 +12,7 @@ import {
 } from "@/services/db-service";
 import { generateDynamicChallenges } from "@/services/ai-coach";
 import { z } from "zod";
+import { Challenge, UserChallenge } from "@/types";
 
 const joinChallengeSchema = z.object({
   challengeCode: z.string(),
@@ -29,7 +30,7 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
 
     // Fetch user latest assessment to generate custom AI challenges
     const assessment = await getLatestAssessment(userId);
-    let dynamicChallenges: any[] = [];
+    let dynamicChallenges: Challenge[] = [];
     if (assessment) {
       dynamicChallenges = await generateDynamicChallenges(assessment);
     }
@@ -72,8 +73,9 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
     try {
       const userChallenge = await joinChallenge(userId, challengeCode);
       return NextResponse.json({ userChallenge }, { status: 201 });
-    } catch (e: any) {
-      return NextResponse.json({ error: e.message || "Failed to join challenge" }, { status: 400 });
+    } catch (e) {
+      const errMsg = e instanceof Error ? e.message : "Failed to join challenge";
+      return NextResponse.json({ error: errMsg }, { status: 400 });
     }
   } catch (error) {
     console.error("Join challenge error:", error);
@@ -99,7 +101,7 @@ export const PATCH = withAuth(async (req: NextRequest, { userId }) => {
 
     // Find the enrollment
     const userChallenges = await getUserChallenges(userId);
-    const enrollment = userChallenges.find((uc: any) => uc.id === id && uc.status === "JOINED");
+    const enrollment = userChallenges.find((uc: UserChallenge) => uc.id === id && uc.status === "JOINED");
 
     if (!enrollment) {
       return NextResponse.json({ error: "Challenge enrollment not found or already completed" }, { status: 404 });
@@ -128,7 +130,7 @@ export const PATCH = withAuth(async (req: NextRequest, { userId }) => {
 
       // Unlock achievements
       const listAfterUpdate = await getUserChallenges(userId);
-      const completedChallengesCount = listAfterUpdate.filter((uc: any) => uc.status === "COMPLETED").length;
+      const completedChallengesCount = listAfterUpdate.filter((uc: UserChallenge) => uc.status === "COMPLETED").length;
 
       if (completedChallengesCount === 1) {
         await addAchievement(userId, "Challenger", "Completed your first weekly challenge", "zap");

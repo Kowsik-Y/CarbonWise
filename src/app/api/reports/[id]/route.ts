@@ -5,8 +5,8 @@ import { handleApiError, NotFoundError } from "@/lib/errors";
 
 export const GET = withAuth(async (req: NextRequest, { userId, params }) => {
   try {
-    const id = params.id;
-    if (!id) {
+    const id = params?.id;
+    if (!id || typeof id !== "string") {
       return NextResponse.json({ error: "Missing report ID" }, { status: 400 });
     }
     

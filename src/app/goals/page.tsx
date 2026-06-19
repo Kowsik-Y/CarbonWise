@@ -6,16 +6,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Target, Leaf, Check, Plus, Trash2, CheckCircle2, Star, Award, Sparkles } from "lucide-react";
-
-interface Goal {
-  id: string;
-  title: string;
-  category: string;
-  co2Reduction: number;
-  difficulty: "easy" | "medium" | "hard";
-  status: "ACTIVE" | "COMPLETED";
-  completedAt?: string;
-}
+import { Goal, AIRecommendation } from "@/types";
 
 export default function GoalsPage() {
   const { user, refreshSession, loading, showToast } = useAuth();
@@ -26,7 +17,7 @@ export default function GoalsPage() {
   const [fetching, setFetching] = useState(true);
 
   // Action planner recommendation list state
-  const [recommendedActions, setRecommendedActions] = useState<any[]>([]);
+  const [recommendedActions, setRecommendedActions] = useState<AIRecommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
 
   const [addingId, setAddingId] = useState<string | null>(null);
@@ -191,11 +182,11 @@ export default function GoalsPage() {
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-brand uppercase tracking-wider capitalize">
+                        <span className="text-xs font-bold text-brand uppercase tracking-wider">
                           {goal.category}
                         </span>
                         <span className="text-gray-600 text-xs">•</span>
-                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider capitalize">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                           {goal.difficulty}
                         </span>
                       </div>
