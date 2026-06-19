@@ -1,0 +1,85 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String             @id @default(uuid())
+  email        String             @unique
+  name         String
+  passwordHash String
+  points       Int                @default(0)
+  level        Int                @default(1)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  assessments  CarbonAssessment[]
+  goals        Goal[]
+  challenges   UserChallenge[]
+  achievements Achievement[]
+}
+
+model CarbonAssessment {
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Input fields
+  transportKm        Float
+  transportType      String   // car_petrol, car_diesel, car_electric, public_transit, flight
+  electricityBill    Float    // Monthly bill or estimated
+  electricityKwh     Float    // Calculated/entered kWh
+  foodHabits         String   // vegan, vegetarian, low_meat, high_meat
+  shoppingHabits     String   // minimal, average, heavy
+  wasteHabits        String   // recycle_all, recycle_some, no_recycling
+  
+  // Calculated emissions (kg CO2e per year)
+  transportEmissions Float
+  energyEmissions    Float
+  foodEmissions      Float
+  shoppingEmissions  Float
+  wasteEmissions     Float
+  
+  monthlyFootprint   Float    // Total kg CO2e / month
+  annualFootprint    Float    // Total kg CO2e / year
+  carbonScore        Int      // 0-100 score
+  
+  createdAt          DateTime @default(now())
+}
+
+model Goal {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  category       String    // transport, energy, food, shopping, waste
+  co2Reduction   Float     // estimated kg CO2e saved annually
+  difficulty     String    // easy, medium, hard
+  status         String    // ACTIVE, COMPLETED
+  targetDate     DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+}
+
+model UserChallenge {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challengeCode String    // no-car-tuesday, plant-based-weekend, energy-saver-week
+  status        String    // JOINED, COMPLETED
+  joinedAt      DateTime  @default(now())
+  completedAt   DateTime?
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  icon        String   // badge name/icon key
+  unlockedAt  DateTime @default(now())
+}

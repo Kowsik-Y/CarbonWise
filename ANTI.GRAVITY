@@ -1,238 +1,212 @@
 You are a Senior Staff Engineer, Product Designer, Security Engineer, Accessibility Specialist, and Sustainability Expert.
 
-Build a production-ready Next.js 15 application called "CarbonWise AI".
+Build a production-ready Next.js 16 application called "CarbonWise AI".
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MISSION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Design a solution that helps individuals understand, track, and reduce their carbon footprint through simple actions and personalized AI-driven insights.
+Design a solution that helps individuals understand, track, and actively reduce their
+carbon footprint through AI-powered personalized insights, gamified habit formation,
+and real-time lifestyle impact simulation.
 
-PRIMARY GOAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRIMARY GOALS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Create a smart sustainability assistant that:
+* Calculate carbon footprint across 5 lifestyle categories
+* Identify major personal emission sources
+* Generate personalized AI reduction recommendations
+* Simulate impact of lifestyle changes before committing
+* Track progress and goals over time
+* Motivate behavioral change through gamification
 
-* Calculates carbon footprint
-* Identifies major emission sources
-* Generates personalized reduction recommendations
-* Simulates impact of lifestyle changes
-* Tracks progress over time
-* Motivates behavioral change
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TECH STACK (ACTUAL BUILD)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-TECH STACK
+* Next.js 16.2.9 — App Router, Turbopack
+* React 19.2.4
+* TypeScript 5.x (strict mode)
+* Tailwind CSS v4 — glassmorphism, radial dark, micro-animations
+* Firebase Authentication (Email/Password via Firebase SDK)
+* Firebase Firestore (primary database — NoSQL collections)
+* Prisma + SQLite (fallback database — auto-selected via db-service.ts)
+* Google Gemini AI (@google/generative-ai) — coach, autocomplete, challenges
+* jose — HttpOnly JWT signing + Firebase JWKS token verification
+* Recharts v3 — SSR-safe dynamic charts
+* Framer Motion — animated page transitions
+* Canvas Confetti — goal completion rewards
+* React Hook Form + Zod — form handling and validation
+* Lucide React — icon library
+* Vitest — unit testing
 
-* Next.js 15 App Router
-* TypeScript (strict mode)
-* Tailwind CSS
-* shadcn/ui
-* Prisma ORM
-* PostgreSQL
-* React Hook Form
-* Zod Validation
-* Recharts
-* Framer Motion
-* Vitest
-* Playwright
-* ESLint
-* Prettier
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ARCHITECTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-ARCHITECTURE REQUIREMENTS
+* Feature-based architecture (features/auth, features/dashboard)
+* Dual-mode database abstraction in src/services/db-service.ts
+  - Firestore when NEXT_PUBLIC_FIREBASE_* keys are present
+  - Prisma/SQLite fallback otherwise — zero code changes needed
+* Server-side JWT session cookies (HttpOnly, Secure, SameSite=Lax)
+* Firebase onAuthStateChanged listener in AuthContext
+* Firebase ID tokens verified server-side via Google JWKS (no service account key)
+* All API routes protected via verifyToken() before data access
+* Clean separation: UI → API routes → db-service → Firestore/Prisma
 
-Use:
-
-* Feature-based architecture
-* SOLID principles
-* Reusable components
-* Server Components where possible
-* Server Actions
-* Clean separation of concerns
-* Dependency inversion
-* Strong typing everywhere
-
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 APPLICATION PAGES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1. Landing Page
-2. Carbon Assessment
-3. AI Coach
-4. Dashboard
-5. Goals Page
-6. Challenges Page
-7. Profile Page
-8. Settings Page
+1. / — Landing page with interactive commute micro-calculator
+2. /auth — Login and sign-up (single page, mode param)
+3. /assessment — 5-step carbon wizard with AI natural language autocomplete
+4. /dashboard — Recharts analytics, score card, goals list, achievements
+5. /coach — Gemini AI sustainability coach with message history
+6. /goals — Action planner with AI-generated recommendations
+7. /simulator — Lifestyle slider simulator with AI suggest plan button
+8. /challenges — Weekly AI-generated eco-challenges board
+9. /profile — User level, XP, badges, assessment reset
 
-CORE FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+API ENDPOINTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1. Carbon Footprint Calculator
+Auth:
+  POST /api/auth/login         — verify Firebase ID token, issue session cookie
+  POST /api/auth/signup        — register user in db-service, issue session cookie
+  POST /api/auth/logout        — clear session cookie
+  GET  /api/auth/session       — verify session cookie, return user profile
 
-Collect:
+Carbon:
+  GET/POST/DELETE /api/carbon/assessment   — CRUD for carbon assessment records
+  POST /api/carbon/parse-assessment        — Gemini parses natural language → assessment fields
 
-* Transportation
-* Electricity
-* Diet
-* Shopping
-* Waste
+Dashboard:
+  GET /api/dashboard           — aggregated user stats (assessment, goals, challenges, achievements)
 
-Generate:
+Goals:
+  GET/POST/PATCH /api/goals    — CRUD for user goals + XP/level update on completion
+  GET /api/goals/recommend     — Gemini-generated personalized goal recommendations
 
-* Monthly CO₂
-* Annual CO₂
-* Category breakdown
+Challenges:
+  GET/POST/PATCH /api/challenges — user challenge enrollment and completion
 
-2. Personalized AI Insights
+Coach:
+  POST /api/chat               — Gemini streaming chat with carbon context
+  GET  /api/coach/report       — Gemini full assessment report generation
 
-Analyze user data and generate:
+Simulator:
+  GET /api/simulator/recommend — Gemini-suggested optimal simulator configuration
 
-* Biggest emission contributors
-* Recommended actions
-* Potential reduction estimates
-* Difficulty score
-* Expected impact score
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AI FEATURES (Gemini Integration)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-3. Carbon Reduction Simulator
+1. AI Assessment Autocomplete
+   - User types natural language description of their lifestyle
+   - Gemini parses it into structured 5-field assessment values
+   - Falls back to sliders if Gemini is unavailable
 
-Allow users to change lifestyle assumptions and instantly view projected reductions.
+2. Dynamic AI Weekly Challenges
+   - Gemini generates 3 custom challenges based on user's top emission category
+   - Appended to static challenge catalog with "AI Recommended" badge
 
-4. Goal Tracking
+3. Action Planner Goal Recommendations
+   - Gemini produces personalized goal list ranked by CO₂ reduction and difficulty
+   - Uses user's actual assessment percentages as context
 
-Users can:
+4. Simulator AI Suggest Plan
+   - Gemini returns optimal slider values for maximum score improvement
+   - User can apply them with one click
 
-* Create goals
-* Track completion
-* Monitor progress
+5. AI Sustainability Coach Chat
+   - Full Gemini conversation with assessment context injected as system prompt
+   - Local heuristic fallback when no API key is configured
 
-5. Weekly Challenges
-
-Generate sustainability challenges.
-
-Examples:
-
-* No-Car Day
-* Vegetarian Day
-* Energy Saver Week
-
-6. AI Sustainability Assistant
-
-Conversational assistant that answers sustainability questions using user context.
-
-DASHBOARD
-
-Display:
-
-* Total emissions
-* Category chart
-* Progress chart
-* Goal completion
-* Carbon reduction trend
-* Challenge achievements
-
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SECURITY REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Implement:
+Implemented:
+* Firebase Authentication — industry-standard identity provider
+* JWKS verification — Firebase tokens verified against Google's public certs
+* HttpOnly session cookies — prevents XSS token theft
+* SameSite=Lax cookies — mitigates CSRF
+* Zod input validation on all API routes
+* Parameterized queries (Prisma) — prevents SQL injection
+* bcryptjs password hashing (10 rounds) — fallback mode
+* No secrets in NEXT_PUBLIC_* variables
+* Auth loading guard — prevents flash of unauthenticated UI (see navigation.tsx, page.tsx)
 
-* Input validation using Zod
-* CSRF protection
-* XSS prevention
-* SQL injection prevention via Prisma
-* Secure authentication
-* Rate limiting
-* Environment variable validation
-* Secure headers
-* Principle of least privilege
+Recommended for production:
+* Tighten Firestore Security Rules to user-scoped access
+* Rate limiting on /api/auth/login and /api/auth/signup
+* CSP headers in next.config.ts
+* NEXT_PUBLIC_APP_URL set for correct OG image resolution
 
-ACCESSIBILITY REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ACCESSIBILITY REQUIREMENTS (WCAG 2.1 AA)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Achieve WCAG 2.1 AA compliance.
+* Semantic HTML5 landmarks
+* Keyboard navigation throughout
+* Visible focus rings (focus:ring-2 focus:ring-brand)
+* Explicit label associations on all form controls
+* High color contrast (white/brand-green on dark backgrounds)
+* ARIA labels on icon-only buttons
+* Reduced motion adherence
 
-Include:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DESIGN SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-* Keyboard navigation
-* Screen reader support
-* Proper labels
-* Semantic HTML
-* ARIA attributes
-* Color contrast compliance
-* Focus management
-* Reduced motion support
+* Dark theme — base color #090d10
+* Brand green — #10b981 (emerald-500)
+* Glassmorphism cards — GlassCard component
+* Radial glow backdrops behind hero sections
+* Micro-animations — pulse-glow, slide-in toasts, spin loaders
+* Loading states — animate-pulse skeleton placeholders during auth resolve
+* Typography — Geist Sans (primary) + Geist Mono (code)
 
-PERFORMANCE REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KEY IMPLEMENTATION NOTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-* Lighthouse score above 95
-* Server Components
-* Dynamic imports
-* Lazy loading
-* Image optimization
-* Bundle optimization
-* Caching strategy
+* All client pages use "use client" — metadata must use document.title in useEffect
+* Export `viewport` separately from `metadata` in layout.tsx (Next.js 16 requirement)
+* Recharts must be dynamically imported with ssr:false to avoid hydration errors
+* Canvas Confetti must be dynamically imported (no SSR support)
+* Auth loading guard: render skeleton placeholders while `loading === true` to prevent
+  flash of logged-out UI in navigation and hero CTA
+* db-service.ts is the single source of truth for all database operations —
+  never call prisma directly from API routes
+* Firebase ID token is obtained client-side via firebaseUser.getIdToken(),
+  sent to /api/auth/login, verified server-side, then a session JWT cookie is issued
 
-TESTING REQUIREMENTS
-
-Create:
-
-* Unit tests
-* Integration tests
-* E2E tests
-
-Minimum coverage target:
-
-80%
-
-CODE QUALITY REQUIREMENTS
-
-* Strict TypeScript
-* No any types
-* Clean architecture
-* Reusable hooks
-* Reusable services
-* Comprehensive comments where needed
-* Consistent naming conventions
-
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DATABASE MODELS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-User
-CarbonAssessment
-EmissionCategory
-Recommendation
-Goal
-Challenge
-Achievement
+Firestore collections (primary):
+  users             — id, name, email, points, level, createdAt
+  assessments       — userId, transport*, energy*, food*, shopping*, waste*, scores, createdAt
+  goals             — userId, title, category, co2Reduction, difficulty, status, createdAt
+  userChallenges    — userId, challengeCode, status, joinedAt, completedAt
+  achievements      — userId, title, description, icon, unlockedAt
 
-README REQUIREMENTS
+Prisma models (fallback SQLite — schema.prisma):
+  User, CarbonAssessment, Goal, UserChallenge, Achievement
 
-Generate a professional README including:
-
-* Project Overview
-* Problem Statement
-* Features
-* Architecture
-* Setup Guide
-* Environment Variables
-* Testing Instructions
-* Security Measures
-* Accessibility Features
-* Assumptions
-* Future Improvements
-
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SCORING OPTIMIZATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Prioritize:
-
-1. Problem Statement Alignment
-2. Accessibility
-3. Code Quality
-4. Security
-5. Testing
-6. Efficiency
-
-OUTPUT REQUIREMENTS
-
-Generate:
-
-* Complete project structure
-* Production-ready code
-* Prisma schema
-* Database models
-* API routes
-* Components
-* Hooks
-* Services
-* Tests
-* README
-
+Priority order:
+1. Problem Statement Alignment (AI-powered personalization)
+2. Accessibility (WCAG 2.1 AA)
+3. Code Quality (TypeScript strict, clean architecture)
+4. Security (Firebase JWKS, HttpOnly cookies, Zod)
+5. Testing (Vitest unit tests)
+6. Performance (Turbopack, static pre-render, dynamic imports)
