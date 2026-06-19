@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { SignJWT, jwtVerify, createRemoteJWKSet } from "jose";
 
 const JWT_SECRET = new TextEncoder().encode(

@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { prisma } from "@/lib/db";
 import { isFirebaseConfigured, db } from "@/lib/firebase";
 import { 
@@ -12,28 +11,7 @@ import {
   Timestamp 
 } from "firebase/firestore";
 import { WeeklyReport } from "@/types";
-
-function convertDoc(docSnap: any) {
-  if (!docSnap.exists()) return null;
-  const data = docSnap.data();
-  const result: any = { id: docSnap.id, ...data };
-  
-  for (const key of Object.keys(result)) {
-    if (result[key] && typeof result[key].toDate === "function") {
-      result[key] = result[key].toDate();
-    }
-  }
-  return result;
-}
-
-function convertQuery(querySnap: any) {
-  const list: any[] = [];
-  querySnap.forEach((docSnap: any) => {
-    const item = convertDoc(docSnap);
-    if (item) list.push(item);
-  });
-  return list;
-}
+import { convertFirestoreDoc, convertFirestoreQuery } from "@/lib/firestore-utils";
 
 export class ReportRepository {
   async getWeeklyReports(userId: string): Promise<WeeklyReport[]> {
@@ -41,9 +19,9 @@ export class ReportRepository {
       const colRef = collection(db, "weeklyReports");
       const q = query(colRef, where("userId", "==", userId));
       const snap = await getDocs(q);
-      const list = convertQuery(snap);
-      list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      return list as WeeklyReport[];
+      const list = convertFirestoreQuery<WeeklyReport>(snap);
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      return list;
     } else {
       const reports = await prisma.weeklyReport.findMany({
         where: { userId },
@@ -57,9 +35,9 @@ export class ReportRepository {
     if (isFirebaseConfigured && db) {
       const docRef = doc(db, "weeklyReports", reportId);
       const snap = await getDoc(docRef);
-      const report = convertDoc(snap);
+      const report = convertFirestoreDoc<WeeklyReport>(snap);
       if (report && report.userId === userId) {
-        return report as WeeklyReport;
+        return report;
       }
       return null;
     } else {

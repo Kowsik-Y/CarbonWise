@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { prisma } from "@/lib/db";
 import { isFirebaseConfigured, db } from "@/lib/firebase";
 import { 
@@ -14,35 +13,14 @@ import {
   Timestamp 
 } from "firebase/firestore";
 import { User, Achievement } from "@/types";
-
-function convertDoc(docSnap: any) {
-  if (!docSnap.exists()) return null;
-  const data = docSnap.data();
-  const result: any = { id: docSnap.id, ...data };
-  
-  for (const key of Object.keys(result)) {
-    if (result[key] && typeof result[key].toDate === "function") {
-      result[key] = result[key].toDate();
-    }
-  }
-  return result;
-}
-
-function convertQuery(querySnap: any) {
-  const list: any[] = [];
-  querySnap.forEach((docSnap: any) => {
-    const item = convertDoc(docSnap);
-    if (item) list.push(item);
-  });
-  return list;
-}
+import { convertFirestoreDoc, convertFirestoreQuery } from "@/lib/firestore-utils";
 
 export class UserRepository {
   async getUserProfile(userId: string): Promise<User | null> {
     if (isFirebaseConfigured && db) {
       const userRef = doc(db, "users", userId);
       const snap = await getDoc(userRef);
-      return convertDoc(snap) as User | null;
+      return convertFirestoreDoc<User>(snap);
     } else {
       const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -113,13 +91,13 @@ export class UserRepository {
     return user as User;
   }
 
-  async getUserByEmail(email: string): Promise<any | null> {
+  async getUserByEmail(email: string): Promise<(User & { passwordHash?: string }) | null> {
     if (isFirebaseConfigured && db) {
       const colRef = collection(db, "users");
       const q = query(colRef, where("email", "==", email.toLowerCase()));
       const snap = await getDocs(q);
       if (snap.empty) return null;
-      return convertDoc(snap.docs[0]);
+      return convertFirestoreDoc<User & { passwordHash?: string }>(snap.docs[0]);
     } else {
       return prisma.user.findUnique({
         where: { email: email.toLowerCase() },
@@ -147,7 +125,7 @@ export class UserRepository {
       const colRef = collection(db, "achievements");
       const q = query(colRef, where("userId", "==", userId));
       const snap = await getDocs(q);
-      return convertQuery(snap) as Achievement[];
+      return convertFirestoreQuery<Achievement>(snap);
     } else {
       const achievements = await prisma.achievement.findMany({
         where: { userId },
@@ -161,7 +139,7 @@ export class UserRepository {
       const colRef = collection(db, "achievements");
       const q = query(colRef, where("userId", "==", userId), where("title", "==", title));
       const snap = await getDocs(q);
-      if (!snap.empty) return convertDoc(snap.docs[0]) as Achievement;
+      if (!snap.empty) return convertFirestoreDoc<Achievement>(snap.docs[0]) as Achievement;
 
       const docRef = await addDoc(colRef, {
         userId,

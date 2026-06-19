@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { prisma } from "@/lib/db";
 import { isFirebaseConfigured, db } from "@/lib/firebase";
 import { 
@@ -13,28 +12,7 @@ import {
   Timestamp 
 } from "firebase/firestore";
 import { UserChallenge } from "@/types";
-
-function convertDoc(docSnap: any) {
-  if (!docSnap.exists()) return null;
-  const data = docSnap.data();
-  const result: any = { id: docSnap.id, ...data };
-  
-  for (const key of Object.keys(result)) {
-    if (result[key] && typeof result[key].toDate === "function") {
-      result[key] = result[key].toDate();
-    }
-  }
-  return result;
-}
-
-function convertQuery(querySnap: any) {
-  const list: any[] = [];
-  querySnap.forEach((docSnap: any) => {
-    const item = convertDoc(docSnap);
-    if (item) list.push(item);
-  });
-  return list;
-}
+import { convertFirestoreDoc, convertFirestoreQuery } from "@/lib/firestore-utils";
 
 export class ChallengeRepository {
   async getUserChallenges(userId: string): Promise<UserChallenge[]> {
@@ -42,7 +20,7 @@ export class ChallengeRepository {
       const colRef = collection(db, "userChallenges");
       const q = query(colRef, where("userId", "==", userId));
       const snap = await getDocs(q);
-      return convertQuery(snap) as UserChallenge[];
+      return convertFirestoreQuery<UserChallenge>(snap);
     } else {
       const userChallenges = await prisma.userChallenge.findMany({
         where: { userId },
@@ -87,11 +65,11 @@ export class ChallengeRepository {
       });
 
       const updatedSnap = await getDoc(docRef);
-      const updated = convertDoc(updatedSnap);
+      const updated = convertFirestoreDoc<UserChallenge>(updatedSnap);
       if (!updated) {
         throw new Error("Failed to load completed challenge details");
       }
-      return updated as UserChallenge;
+      return updated;
     } else {
       const userChallenge = await prisma.userChallenge.findFirst({
         where: { id: enrollmentId, userId, status: "JOINED" },

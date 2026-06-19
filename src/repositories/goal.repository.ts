@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { prisma } from "@/lib/db";
 import { isFirebaseConfigured, db } from "@/lib/firebase";
 import { 
@@ -13,28 +12,7 @@ import {
   Timestamp 
 } from "firebase/firestore";
 import { Goal } from "@/types";
-
-function convertDoc(docSnap: any) {
-  if (!docSnap.exists()) return null;
-  const data = docSnap.data();
-  const result: any = { id: docSnap.id, ...data };
-  
-  for (const key of Object.keys(result)) {
-    if (result[key] && typeof result[key].toDate === "function") {
-      result[key] = result[key].toDate();
-    }
-  }
-  return result;
-}
-
-function convertQuery(querySnap: any) {
-  const list: any[] = [];
-  querySnap.forEach((docSnap: any) => {
-    const item = convertDoc(docSnap);
-    if (item) list.push(item);
-  });
-  return list;
-}
+import { convertFirestoreDoc, convertFirestoreQuery } from "@/lib/firestore-utils";
 
 export class GoalRepository {
   async getUserGoals(userId: string): Promise<Goal[]> {
@@ -42,9 +20,9 @@ export class GoalRepository {
       const colRef = collection(db, "goals");
       const q = query(colRef, where("userId", "==", userId));
       const snap = await getDocs(q);
-      const list = convertQuery(snap);
-      list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      return list as Goal[];
+      const list = convertFirestoreQuery<Goal>(snap);
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      return list;
     } else {
       const goals = await prisma.goal.findMany({
         where: { userId },
@@ -82,13 +60,13 @@ export class GoalRepository {
   async updateGoal(userId: string, goalId: string, status: "ACTIVE" | "COMPLETED"): Promise<Goal | null> {
     if (isFirebaseConfigured && db) {
       const docRef = doc(db, "goals", goalId);
-      const updateData: any = { status };
+      const updateData: { status: "ACTIVE" | "COMPLETED"; completedAt?: Timestamp } = { status };
       if (status === "COMPLETED") {
         updateData.completedAt = Timestamp.now();
       }
       await updateDoc(docRef, updateData);
       const updatedSnap = await getDoc(docRef);
-      return convertDoc(updatedSnap) as Goal | null;
+      return convertFirestoreDoc<Goal>(updatedSnap);
     } else {
       const updated = await prisma.goal.update({
         where: { id: goalId, userId },

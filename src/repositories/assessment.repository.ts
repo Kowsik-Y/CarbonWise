@@ -1,9 +1,7 @@
-/* eslint-disable */
 import { prisma } from "@/lib/db";
 import { isFirebaseConfigured, db } from "@/lib/firebase";
 import { 
   collection, 
-  doc, 
   getDocs, 
   query, 
   where, 
@@ -11,28 +9,7 @@ import {
   Timestamp 
 } from "firebase/firestore";
 import { CarbonAssessment } from "@/types";
-
-function convertDoc(docSnap: any) {
-  if (!docSnap.exists()) return null;
-  const data = docSnap.data();
-  const result: any = { id: docSnap.id, ...data };
-  
-  for (const key of Object.keys(result)) {
-    if (result[key] && typeof result[key].toDate === "function") {
-      result[key] = result[key].toDate();
-    }
-  }
-  return result;
-}
-
-function convertQuery(querySnap: any) {
-  const list: any[] = [];
-  querySnap.forEach((docSnap: any) => {
-    const item = convertDoc(docSnap);
-    if (item) list.push(item);
-  });
-  return list;
-}
+import { convertFirestoreQuery } from "@/lib/firestore-utils";
 
 export class AssessmentRepository {
   async getLatestAssessment(userId: string): Promise<CarbonAssessment | null> {
@@ -41,9 +18,9 @@ export class AssessmentRepository {
       const q = query(colRef, where("userId", "==", userId));
       const snap = await getDocs(q);
       if (snap.empty) return null;
-      const list = convertQuery(snap);
-      list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      return list[0] as CarbonAssessment;
+      const list = convertFirestoreQuery<CarbonAssessment>(snap);
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      return list[0];
     } else {
       const assessment = await prisma.carbonAssessment.findFirst({
         where: { userId },
@@ -58,9 +35,9 @@ export class AssessmentRepository {
       const colRef = collection(db, "assessments");
       const q = query(colRef, where("userId", "==", userId));
       const snap = await getDocs(q);
-      const list = convertQuery(snap);
-      list.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-      return list as CarbonAssessment[];
+      const list = convertFirestoreQuery<CarbonAssessment>(snap);
+      list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      return list;
     } else {
       const assessments = await prisma.carbonAssessment.findMany({
         where: { userId },
