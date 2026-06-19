@@ -235,7 +235,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {children}
 
       {/* Floating Toast Notification Stack */}
-      <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+      <div className="fixed bottom-5 right-5 z-100 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
         {toasts.map((toast) => (
           <div
             key={toast.id}
