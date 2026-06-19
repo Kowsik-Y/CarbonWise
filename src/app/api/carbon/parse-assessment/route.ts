@@ -1,22 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseAssessmentFromText } from "@/services/ai-coach";
-import { verifyToken } from "@/services/auth";
-import { cookies } from "next/headers";
+import { withAuth } from "@/lib/proxy";
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest) => {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await req.json();
     const { text } = body;
 
@@ -30,4 +17,4 @@ export async function POST(req: NextRequest) {
     console.error("AI parse assessment API error:", error);
     return NextResponse.json({ error: "Failed to parse assessment details" }, { status: 500 });
   }
-}
+});

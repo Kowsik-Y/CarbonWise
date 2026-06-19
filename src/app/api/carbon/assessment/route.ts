@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/services/auth";
-import { cookies } from "next/headers";
+import { withAuth } from "@/lib/proxy";
 import { calculateCarbonFootprint } from "@/utils/carbon-calculator";
 import { 
   getLatestAssessment, 
@@ -23,44 +22,19 @@ const assessmentSchema = z.object({
   wasteHabits: z.string(),
 });
 
-export async function GET() {
+export const GET = withAuth(async (req: NextRequest, { userId }) => {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const assessment = await getLatestAssessment(payload.userId);
+    const assessment = await getLatestAssessment(userId);
 
     return NextResponse.json({ assessment });
   } catch (error) {
     console.error("Fetch assessment error:", error);
     return NextResponse.json({ error: "Failed to fetch assessment" }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, { userId }) => {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = payload.userId;
     const body = await req.json();
     const validation = assessmentSchema.safeParse(body);
 
@@ -128,23 +102,10 @@ export async function POST(req: NextRequest) {
     console.error("Save assessment error:", error);
     return NextResponse.json({ error: "Failed to save assessment" }, { status: 500 });
   }
-}
+});
 
-export async function DELETE() {
+export const DELETE = withAuth(async (req: NextRequest, { userId }) => {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = payload.userId;
 
     // Delete all assessments for the user
     await deleteAssessments(userId);
@@ -154,4 +115,4 @@ export async function DELETE() {
     console.error("Reset assessment error:", error);
     return NextResponse.json({ error: "Failed to reset assessments" }, { status: 500 });
   }
-}
+});

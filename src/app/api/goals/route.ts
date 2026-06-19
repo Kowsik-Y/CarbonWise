@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/services/auth";
+import { withAuth } from "@/lib/proxy";
 import { 
   getUserGoals, 
   addGoal, 
@@ -8,7 +8,6 @@ import {
   updateUserPoints, 
   addAchievement 
 } from "@/services/db-service";
-import { cookies } from "next/headers";
 import { z } from "zod";
 
 const createGoalSchema = z.object({
@@ -23,44 +22,19 @@ const updateGoalSchema = z.object({
   status: z.enum(["ACTIVE", "COMPLETED"]),
 });
 
-export async function GET() {
+export const GET = withAuth(async (req: NextRequest, { userId }) => {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const goals = await getUserGoals(payload.userId);
+    const goals = await getUserGoals(userId);
 
     return NextResponse.json({ goals });
   } catch (error) {
     console.error("Fetch goals error:", error);
     return NextResponse.json({ error: "Failed to fetch goals" }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, { userId }) => {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = payload.userId;
     const body = await req.json();
     const validation = createGoalSchema.safeParse(body);
 
@@ -93,23 +67,10 @@ export async function POST(req: NextRequest) {
     console.error("Create goal error:", error);
     return NextResponse.json({ error: "Failed to create goal" }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(req: NextRequest) {
+export const PATCH = withAuth(async (req: NextRequest, { userId }) => {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = payload.userId;
     const body = await req.json();
     const validation = updateGoalSchema.safeParse(body);
 
@@ -167,4 +128,4 @@ export async function PATCH(req: NextRequest) {
     console.error("Update goal error:", error);
     return NextResponse.json({ error: "Failed to update goal" }, { status: 500 });
   }
-}
+});

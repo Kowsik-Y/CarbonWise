@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/services/auth";
-import { cookies } from "next/headers";
+import { withAuth } from "@/lib/proxy";
 import { generateEvaluationReport } from "@/services/ai-coach";
 import { 
   getLatestAssessment, 
@@ -8,22 +7,8 @@ import {
   getUserChallenges 
 } from "@/services/db-service";
 
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: NextRequest, { userId }) => {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = payload.userId;
-
     // Fetch assessment, goals, and challenges status using the DB Service
     const latestAssessment = await getLatestAssessment(userId);
 
@@ -46,4 +31,4 @@ export async function GET(req: NextRequest) {
     console.error("AI Coach Evaluation Report API error:", error);
     return NextResponse.json({ error: "Failed to generate evaluation report" }, { status: 500 });
   }
-}
+});

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/services/auth";
-import { cookies } from "next/headers";
+import { withAuth } from "@/lib/proxy";
 import { generateCoachingResponse } from "@/services/ai-coach";
 import { getLatestAssessment } from "@/services/db-service";
 import { z } from "zod";
@@ -17,21 +16,8 @@ const chatSchema = z.object({
     .optional(),
 });
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, { userId }) => {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = payload.userId;
     const body = await req.json();
     const validation = chatSchema.safeParse(body);
 
@@ -51,4 +37,4 @@ export async function POST(req: NextRequest) {
     console.error("AI Coach API error:", error);
     return NextResponse.json({ error: "Coaching failed" }, { status: 500 });
   }
-}
+});

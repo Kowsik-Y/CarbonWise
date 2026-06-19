@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/services/auth";
-import { cookies } from "next/headers";
+import { withAuth } from "@/lib/proxy";
 import { WEEKLY_CHALLENGES } from "@/utils/challenges-list";
 import { 
   getUserChallenges, 
@@ -22,21 +21,8 @@ const completeChallengeSchema = z.object({
   id: z.string(),
 });
 
-export async function GET() {
+export const GET = withAuth(async (req: NextRequest, { userId }) => {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = payload.userId;
 
     // Fetch user joined challenges
     const userChallenges = await getUserChallenges(userId);
@@ -59,23 +45,10 @@ export async function GET() {
     console.error("Fetch challenges error:", error);
     return NextResponse.json({ error: "Failed to fetch challenges" }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, { userId }) => {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = payload.userId;
     const body = await req.json();
     const validation = joinChallengeSchema.safeParse(body);
 
@@ -106,23 +79,10 @@ export async function POST(req: NextRequest) {
     console.error("Join challenge error:", error);
     return NextResponse.json({ error: "Failed to join challenge" }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(req: NextRequest) {
+export const PATCH = withAuth(async (req: NextRequest, { userId }) => {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = payload.userId;
     const body = await req.json();
     const validation = completeChallengeSchema.safeParse(body);
 
@@ -182,4 +142,4 @@ export async function PATCH(req: NextRequest) {
     console.error("Complete challenge error:", error);
     return NextResponse.json({ error: "Failed to complete challenge" }, { status: 500 });
   }
-}
+});
