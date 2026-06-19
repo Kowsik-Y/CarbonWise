@@ -57,7 +57,7 @@ export default function AssessmentPage() {
           if (values.foodHabits) setFoodHabits(values.foodHabits);
           if (values.shoppingHabits) setShoppingHabits(values.shoppingHabits);
           if (values.wasteHabits) setWasteHabits(values.wasteHabits);
-          
+
           showToast("AI parsed details and filled the assessment forms! Review and submit. ✨", "success");
         }
       } else {
@@ -273,9 +273,9 @@ export default function AssessmentPage() {
             />
 
             <div className="relative flex py-2 items-center">
-              <div className="flex-grow border-t border-white/5"></div>
+              <div className="flex-1 grow border-t border-white/5"></div>
               <span className="flex-shrink mx-4 text-xs text-gray-500 uppercase tracking-widest font-semibold">Or enter directly</span>
-              <div className="flex-grow border-t border-white/5"></div>
+              <div className="flex-1 grow border-t border-white/5"></div>
             </div>
 
             <Input

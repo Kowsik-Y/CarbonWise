@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-context";
-import { Menu, X, Leaf, Target, MessageSquare, Compass, BarChart2, ShieldAlert, User as UserIcon, LogOut, Sliders } from "lucide-react";
+import { Menu, X, Leaf, Target, MessageSquare, Compass, BarChart2, ShieldAlert, User as UserIcon, LogOut, Sliders, Calendar } from "lucide-react";
 
 export function Navigation() {
   const { user, loading, logout } = useAuth();
@@ -20,6 +20,7 @@ export function Navigation() {
     { href: "/assessment", label: "Assessment", icon: Compass },
     { href: "/simulator", label: "Simulator", icon: Sliders },
     { href: "/coach", label: "AI Coach", icon: MessageSquare },
+    { href: "/reports", label: "Reports", icon: Calendar },
     { href: "/goals", label: "Goals", icon: Target },
     { href: "/challenges", label: "Challenges", icon: ShieldAlert },
     { href: "/profile", label: "Profile", icon: UserIcon },

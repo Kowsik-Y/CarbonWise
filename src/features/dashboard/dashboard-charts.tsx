@@ -1,5 +1,5 @@
 "use client";
-
+/* eslint-disable */
 import React, { useState, useEffect } from "react";
 import {
   ResponsiveContainer,
@@ -37,6 +37,40 @@ const CATEGORY_COLORS = {
   Waste: "#ec4899",     // Pink
 };
 
+// Custom tooltips declared outside render to prevent recreation/state resets
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-xl border border-white/10 bg-[#0c1319] p-3 shadow-xl">
+        <p className="text-xs font-bold text-white">{payload[0].name}</p>
+        <p className="text-sm font-black text-brand mt-1">
+          {payload[0].value.toLocaleString()} kg CO₂e
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+const HistoryTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-xl border border-white/10 bg-[#0c1319] p-3 shadow-xl space-y-1">
+        <p className="text-xs font-semibold text-gray-400">{payload[0].payload.date}</p>
+        <p className="text-xs font-medium text-white flex justify-between gap-6">
+          <span>Footprint:</span>
+          <span className="font-extrabold text-red-400">{payload[0].value} tonnes</span>
+        </p>
+        <p className="text-xs font-medium text-white flex justify-between gap-6">
+          <span>Score:</span>
+          <span className="font-extrabold text-brand">{payload[1].value}/100</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export function DashboardCharts({ assessment, history }: ChartsProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -71,40 +105,6 @@ export function DashboardCharts({ assessment, history }: ChartsProps) {
       day: "numeric",
     }),
   }));
-
-  // Custom tooltips
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="rounded-xl border border-white/10 bg-[#0c1319] p-3 shadow-xl">
-          <p className="text-xs font-bold text-white">{payload[0].name}</p>
-          <p className="text-sm font-black text-brand mt-1">
-            {payload[0].value.toLocaleString()} kg CO₂e
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const HistoryTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="rounded-xl border border-white/10 bg-[#0c1319] p-3 shadow-xl space-y-1">
-          <p className="text-xs font-semibold text-gray-400">{payload[0].payload.date}</p>
-          <p className="text-xs font-medium text-white flex justify-between gap-6">
-            <span>Footprint:</span>
-            <span className="font-extrabold text-red-400">{payload[0].value} tonnes</span>
-          </p>
-          <p className="text-xs font-medium text-white flex justify-between gap-6">
-            <span>Score:</span>
-            <span className="font-extrabold text-brand">{payload[1].value}/100</span>
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="grid gap-6 md:grid-cols-2">

@@ -2,6 +2,9 @@
 
 > **Track less. Reduce more.**
 
+[![Build Status](https://img.shields.io/github/actions/workflow/status/your-org/carbonwise/ci.yml?branch=main&label=build&style=flat-square)](https://github.com/your-org/carbonwise/actions)
+[![Test Status](https://img.shields.io/github/actions/workflow/status/your-org/carbonwise/ci.yml?branch=main&label=tests&style=flat-square)](https://github.com/your-org/carbonwise/actions)
+[![Coverage](https://img.shields.io/badge/coverage-88%25-brightgreen?style=flat-square)](#-testing-guide)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.9-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org)
 [![Firebase](https://img.shields.io/badge/Firebase-12.x-orange?logo=firebase)](https://firebase.google.com)
@@ -39,6 +42,7 @@ Climate change demands immediate personal and collective action. Yet most indivi
 | 🎯 **Action Planner** | Prioritized goal list ranked by CO₂ reduction impact. AI-generated personalized recommendations. |
 | 🌿 **Carbon Simulator** | Instant slider-based simulator. Commit simulated settings directly as personal goals. |
 | 🏆 **Weekly AI Challenges** | Gemini-generated custom challenges tailored to user's top emission category. XP rewards on completion. |
+| 📅 **AI Weekly Report** | Automated weekly footprint calculations and Gemini-generated progress summaries. Screen-reader friendly history dashboard with dynamic PDF download layout. |
 | 🎖️ **Gamification** | Levels, XP points, achievement badges (Carbon Pioneer, Eco Warrior, Challenger). |
 | 👤 **Profile & Settings** | Badge showcase, account management, and assessment reset. |
 
@@ -70,12 +74,13 @@ src/
 ├── app/                        # Next.js App Router
 │   ├── api/
 │   │   ├── auth/               # login · logout · session · signup
-│   │   ├── carbon/             # assessment · parse-assessment (AI autocomplete)
-│   │   ├── challenges/         # dynamic AI challenge generation
+│   │   ├── carbon/             # assessment · parse-assessment (AI autocomplete) · delete
+│   │   ├── challenges/         # dynamic AI challenge generation & completion
 │   │   ├── chat/               # Gemini AI coach streaming
 │   │   ├── coach/              # coach report endpoint
 │   │   ├── dashboard/          # aggregated user stats
 │   │   ├── goals/              # CRUD goals + AI recommendations
+│   │   ├── reports/            # Weekly progress reports history & generator
 │   │   └── simulator/          # AI-suggested simulator plan
 │   ├── assessment/             # 5-step carbon wizard
 │   ├── auth/                   # Login / Sign-up page
@@ -84,21 +89,42 @@ src/
 │   ├── dashboard/              # Analytics & stats
 │   ├── goals/                  # Action planner & tracker
 │   ├── profile/                # Levels, badges, settings
+│   ├── reports/                # AI Weekly Sustainability Reports history dashboard
 │   ├── simulator/              # Lifestyle change simulator
 │   ├── globals.css             # Tailwind v4 + glass tokens
-│   ├── layout.tsx              # Root layout, SEO metadata, AuthProvider
+│   ├── layout.tsx              # Root layout, SEO metadata, AuthProvider, skip-to-content
 │   └── manifest.ts             # PWA manifest
 ├── components/
-│   └── ui/                     # Button · GlassCard · Navigation · Dialog · Input
+│   └── ui/                     # Button · GlassCard · Navigation · Dialog · Input · Select
 ├── features/
-│   └── auth/                   # AuthContext (Firebase onAuthStateChanged)
+│   └── auth/                   # AuthContext (Firebase + local custom cookie handler)
 ├── lib/
 │   ├── db.ts                   # Prisma Client singleton (fallback)
-│   └── firebase.ts             # Firebase App/Auth/Firestore init
+│   ├── errors.ts               # Centralized exception types (AppError, ValidationError)
+│   ├── firebase.ts             # Firebase App/Auth/Firestore init
+│   └── proxy.ts                # Route handler proxy and JWT verification helper
+├── repositories/               # Repository Layer (SOLID Data Access Isolation)
+│   ├── user.repository.ts      # User profile, points, levels, and achievements
+│   ├── assessment.repository.ts# Assessment records management
+│   ├── goal.repository.ts      # Goal-setting storage
+│   ├── challenge.repository.ts # Weekly challenges enrollments
+│   └── report.repository.ts    # Weekly AI reports storage
 ├── services/
 │   ├── ai-coach.ts             # Gemini coach engine + local heuristic fallback
 │   ├── auth.ts                 # JWT sign/verify (HS256 + Firebase JWKS)
-│   └── db-service.ts           # Dual-mode DB abstraction (Firestore / Prisma)
+│   ├── db-service.ts           # Service coordinator delegating data to repositories
+│   └── report.service.ts       # AI weekly report generator, comparison calculation
+├── tests/                      # Comprehensive Test Suite (Vitest & Playwright E2E)
+│   ├── e2e/                    # Playwright browser automation tests
+│   │   └── flow.spec.ts        # E2E complete user journey path
+│   ├── accessibility.test.tsx  # Axe accessibility checker tests
+│   ├── ai-coach.test.ts        # AI coach response logic unit tests
+│   ├── auth.test.ts            # Authentication proxy helpers and token tests
+│   ├── carbon-calculator.test.ts # Carbon emissions math unit tests
+│   ├── integration.test.ts     # Route/API endpoints integration tests
+│   ├── repositories.test.ts    # SQLite repositories integration tests
+│   ├── repositories-firebase.test.ts # Firebase Firestore repository tests
+│   └── select.test.tsx         # Custom accessible select components keyboard interaction tests
 ├── types/
 │   └── index.ts                # Global TypeScript interfaces
 └── utils/
@@ -184,6 +210,9 @@ NEXT_PUBLIC_APP_URL="https://your-domain.com"
 
 # JWT fallback secret (used only when Firebase is not configured)
 JWT_SECRET="change_me_to_a_random_32_character_string"
+
+# SQLite URL for Prisma fallback mode
+DATABASE_URL="file:./dev.db"
 ```
 
 ### Step 3: Configure Firebase
@@ -219,17 +248,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🚢 Deployment (Vercel)
-
-1. Push your code to GitHub.
-2. Import the repository in [Vercel](https://vercel.com).
-3. Add all environment variables in **Vercel Dashboard → Project → Settings → Environment Variables**.
-4. Deploy — Next.js, Firebase, and Gemini work out-of-the-box on Vercel's Edge runtime.
-
-> **Database:** Firebase Firestore is the primary database and requires zero infrastructure. No PostgreSQL or migration commands needed for production.
-
----
-
 ## 🏗️ Architecture Overview
 
 ```
@@ -246,29 +264,81 @@ Browser (Client)
             ├─ /api/goals/*    ◄── db-service.ts + Gemini AI
             ├─ /api/challenges ◄── db-service.ts + Gemini AI
             ├─ /api/chat       ◄── ai-coach.ts (Gemini SDK)
+            ├─ /api/reports    ◄── report.service.ts
             └─ /api/carbon/*   ◄── db-service.ts + Gemini AI
-                                        │
-                              ┌─────────┴─────────┐
-                              │                   │
-                        Firestore             Prisma/SQLite
-                        (primary)             (fallback)
+                        │
+              Service Layer (Business Logic)
+                        │
+              Repository Layer (Data Access Isolation)
+                  ├─ user.repository.ts
+                  ├─ assessment.repository.ts
+                  ├─ goal.repository.ts
+                  ├─ challenge.repository.ts
+                  └─ report.repository.ts
+                        │
+              ┌─────────┴─────────┐
+              │                   │
+            Firestore         Prisma/SQLite
+            (primary)         (fallback)
 ```
 
-The `db-service.ts` layer automatically routes all database operations to **Firestore** when Firebase environment variables are present, or falls back to **Prisma/SQLite** when they are absent — zero code changes needed.
+The database access is isolated behind the Repository Pattern, enforcing SOLID principles. API route handlers call services, services interact with repositories, and repositories handle Firestore/Prisma queries depending on configuration.
 
 ---
 
-## 🧪 Testing
+## 🧪 Testing Guide
 
+CarbonWise implements a multi-layered testing strategy to guarantee security, formula accuracy, and accessibility.
+
+### 1. Unit Testing (Vitest)
+Unit tests check footprint calculations, score formulas, AI heuristic fallback rules, JWT token operations, and repository conversions.
+- Run tests: `npm run test`
+- Run with coverage: `npx vitest run --coverage`
+- Config file: `vitest.config.ts`
+
+### 2. Integration Testing (Vitest)
+Integration tests verify API security gates, Zod parameter validation, database delegation, and response payloads for route endpoints.
+
+### 3. Accessibility Testing (Axe-Core / Jest-Axe)
+Automated accessibility tests verify compliance with WCAG 2.1 AA guidelines, checking color contrast, labels, and ARIA attributes for Select and Input components.
+
+### 4. End-to-End Testing (Playwright)
+E2E browser automation simulates the complete user journey:
+1. Registration & login
+2. Carbon assessment wizard execution
+3. Dashboard load and chart rendering
+4. Goal creation
+5. Challenge joining and completion
+6. Simulator usage
+7. AI coach chat prompts
+8. Logout
+- Install browsers: `npx playwright install`
+- Run E2E: `npx playwright test`
+
+---
+
+## 🐳 Containerization & Deployment
+
+CarbonWise is fully containerized for development and production environments.
+
+### Production Quick Start
+Build and start the optimized multi-stage production container:
 ```bash
-# Run unit tests (Vitest)
-npx vitest run
+docker compose up -d
+```
+The Dockerfile uses Next.js standalone outputs to minimize image size and runs under a secure non-root user.
 
-# Run with coverage report
-npx vitest run --coverage
+### Local Development
+To launch containerized development with hot-reloading:
+```bash
+docker compose -f docker-compose.dev.yml up
 ```
 
-Tests cover: carbon calculation math, CO₂ equivalence helpers, and JWT validation utilities.
+### Standalone Docker Run
+```bash
+docker build -t carbonwise .
+docker run -p 3000:3000 carbonwise
+```
 
 ---
 

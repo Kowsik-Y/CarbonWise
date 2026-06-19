@@ -91,8 +91,16 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-[#090d10] text-foreground antialiased selection:bg-brand/20 selection:text-brand-light">
         <AuthProvider>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-brand focus:text-[#090d10] focus:rounded-xl focus:outline-none font-bold shadow-lg"
+          >
+            Skip to content
+          </a>
           <Navigation />
-          <main className="flex-1 flex flex-col">{children}</main>
+          <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col focus:outline-none">
+            {children}
+          </main>
           
           {/* Footer */}
           <footer className="border-t border-white/5 bg-[#070b0e] py-6 text-center text-xs text-gray-500">

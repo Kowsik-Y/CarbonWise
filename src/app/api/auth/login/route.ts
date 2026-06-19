@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { userRepository } from "@/repositories/user.repository";
 import bcrypt from "bcryptjs";
 import { signToken, verifyToken } from "@/services/auth";
 import { getUserProfile, createUserProfile } from "@/services/db-service";
@@ -62,9 +62,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Find user
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
+    const user = await userRepository.getUserByEmail(email);
 
     if (!user) {
       return NextResponse.json(

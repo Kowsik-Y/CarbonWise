@@ -76,3 +76,15 @@ export interface AuthSession {
   user: User | null;
   isLoading: boolean;
 }
+
+export interface WeeklyReport {
+  id: string;
+  userId: string;
+  carbonReduction: number;
+  topAccomplishment: string;
+  missedOpportunities: string;
+  recommendedActions: string;
+  scoreTrend: string;
+  createdAt: Date | string;
+}
+

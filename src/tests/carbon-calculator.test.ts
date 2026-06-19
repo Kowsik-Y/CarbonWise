@@ -73,6 +73,26 @@ describe("Carbon Footprint Calculator", () => {
     expect(eq.flightsSaved).toBe(9);         // 2200 / 250 = 8.8 -> 9
     expect(eq.carMilesAvoided).toBe(5500);   // 2200 / 0.4 = 5500
   });
+
+  it("should handle default fallback values for invalid/missing keys", () => {
+    const input = {
+      transportKm: 10,
+      transportType: "unknown_vehicle",
+      electricityBill: 0,
+      electricityKwh: 100,
+      foodHabits: "unknown_diet",
+      shoppingHabits: "unknown_shopping",
+      wasteHabits: "unknown_waste",
+    };
+
+    const result = calculateCarbonFootprint(input);
+    expect(result.transportEmissions).toBe(0);
+    expect(result.energyEmissions).toBeCloseTo(456, 0);
+    expect(result.foodEmissions).toBe(1600);
+    expect(result.shoppingEmissions).toBe(1200);
+    expect(result.wasteEmissions).toBe(300);
+    expect(result.annualFootprint).toBe(3556);
+  });
 });
 
 describe("AI Coach Heuristic Responses", () => {

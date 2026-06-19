@@ -81,7 +81,7 @@ export default function SimulatorPage() {
           if (recommendation.targetFoodHabits) setSimFoodHabits(recommendation.targetFoodHabits);
           if (recommendation.targetShoppingHabits) setSimShoppingHabits(recommendation.targetShoppingHabits);
           if (recommendation.targetWasteHabits) setSimWasteHabits(recommendation.targetWasteHabits);
-          
+
           showToast("AI optimized simulation variables to suggest the highest impact lifestyle reduction! 🌟", "success");
         }
       } else {
@@ -105,7 +105,7 @@ export default function SimulatorPage() {
 
   if (!hasAssessment) {
     return (
-      <div className="flex-grow flex items-center justify-center p-4 max-w-md mx-auto text-center">
+      <div className="flex-1 grow flex items-center justify-center p-4 max-w-md mx-auto text-center">
         <GlassCard premium className="space-y-6">
           <AlertCircle className="h-12 w-12 text-brand mx-auto animate-bounce" />
           <h2 className="text-xl font-bold text-white">No Assessment Found</h2>

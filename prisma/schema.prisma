@@ -20,6 +20,7 @@ model User {
   goals        Goal[]
   challenges   UserChallenge[]
   achievements Achievement[]
+  weeklyReports WeeklyReport[]
 }
 
 model CarbonAssessment {
@@ -83,3 +84,16 @@ model Achievement {
   icon        String   // badge name/icon key
   unlockedAt  DateTime @default(now())
 }
+
+model WeeklyReport {
+  id                  String   @id @default(uuid())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  carbonReduction     Float
+  topAccomplishment   String
+  missedOpportunities String
+  recommendedActions  String
+  scoreTrend          String
+  createdAt           DateTime @default(now())
+}
+

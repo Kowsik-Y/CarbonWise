@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { userRepository } from "@/repositories/user.repository";
 import bcrypt from "bcryptjs";
 import { signToken, verifyToken } from "@/services/auth";
 import { createUserProfile, getUserProfile } from "@/services/db-service";
@@ -61,9 +61,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
+    const existingUser = await userRepository.getUserByEmail(email);
 
     if (existingUser) {
       return NextResponse.json(
@@ -76,12 +74,10 @@ export async function POST(req: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 10);
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email: email.toLowerCase(),
-        passwordHash,
-      },
+    const user = await userRepository.createUser({
+      name,
+      email,
+      passwordHash,
     });
 
     // Generate JWT token

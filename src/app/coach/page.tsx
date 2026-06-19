@@ -196,7 +196,7 @@ export default function CoachPage() {
   }
 
   return (
-    <div className="flex-grow max-w-5xl mx-auto px-4 py-6 sm:px-6 lg:px-8 w-full flex flex-col h-[calc(100vh-180px)] max-h-[700px] min-h-[500px]">
+    <div className="flex-1 grow max-w-5xl mx-auto px-4 py-6 sm:px-6 lg:px-8 w-full flex flex-col h-[calc(100vh-180px)] max-h-[700px] min-h-[500px]">
       {/* Top Title Bar */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-3">
@@ -212,6 +212,7 @@ export default function CoachPage() {
         <button
           onClick={handleClear}
           title="Clear Chat Logs"
+          aria-label="Clear Chat Logs"
           className="rounded-xl p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/5 border border-white/5 transition-all cursor-pointer"
         >
           <Trash2 className="h-4.5 w-4.5" />
@@ -236,7 +237,7 @@ export default function CoachPage() {
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col rounded-2xl border border-white/10 bg-[#090d10]/40 overflow-hidden min-h-0">
             {/* Scrollable Dialogue Logs */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar" aria-live="polite" aria-atomic="false">
               {messages.map((msg, index) => (
                 <div
                   key={index}
@@ -296,6 +297,7 @@ export default function CoachPage() {
                 <input
                   type="text"
                   placeholder="Ask something (e.g. Is eating chicken better than beef?)"
+                  aria-label="Ask sustainability coach a question"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   disabled={sending}
@@ -304,6 +306,7 @@ export default function CoachPage() {
                 <button
                   type="submit"
                   disabled={!input.trim() || sending}
+                  aria-label="Send message"
                   className="rounded-xl p-3 bg-brand text-background hover:bg-brand-light font-semibold shadow disabled:opacity-50 disabled:pointer-events-none active:scale-95 transition-all cursor-pointer shrink-0"
                 >
                   <Send className="h-4 w-4" />
