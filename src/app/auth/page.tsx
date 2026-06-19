@@ -20,6 +20,12 @@ function AuthForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Sync mount state to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Sync mode with search param
   useEffect(() => {
@@ -178,7 +184,7 @@ function AuthForm() {
           </Button>
         </form>
 
-        {isFirebaseConfigured && (
+        {mounted && isFirebaseConfigured && (
           <>
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
