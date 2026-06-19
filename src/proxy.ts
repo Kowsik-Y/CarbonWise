@@ -9,9 +9,10 @@ export const config = {
      * Match all request paths except for the ones starting with:
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico, sitemap.xml, robots.txt, icon.png, manifest.webmanifest (metadata and public assets)
+     * - favicon.ico, sitemap.xml, robots.txt (metadata files)
+     * - Any path with a file extension (e.g. .png, .js, .css, .webmanifest)
      */
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|icon.png|manifest.webmanifest|pwa_icon|carbonwise_favicon).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\..*$).*)",
   ],
 };
 
