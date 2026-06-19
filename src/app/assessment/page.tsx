@@ -274,7 +274,7 @@ export default function AssessmentPage() {
 
             <div className="relative flex py-2 items-center">
               <div className="flex-1 grow border-t border-white/5"></div>
-              <span className="flex-shrink mx-4 text-xs text-gray-500 uppercase tracking-widest font-semibold">Or enter directly</span>
+              <span className="shrink mx-4 text-xs text-gray-500 uppercase tracking-widest font-semibold">Or enter directly</span>
               <div className="flex-1 grow border-t border-white/5"></div>
             </div>
 
