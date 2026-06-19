@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/services/auth";
 
 export interface AuthenticatedContext {
   userId: string;
@@ -15,20 +13,15 @@ export type AuthenticatedHandler = (
 
 /**
  * Higher-order function to wrap Next.js API route handlers with Authentication checks.
- * Resolves cookie tokens (Firebase or Custom JWT) and exposes authenticated context to handlers.
+ * Exposes the authenticated context injected by the global proxy middleware.
  */
 export function withAuth(handler: AuthenticatedHandler) {
   return async (req: NextRequest, context?: { params?: Promise<any> | any }) => {
     try {
-      const cookieStore = await cookies();
-      const token = cookieStore.get("token")?.value;
+      const userId = req.headers.get("x-user-id");
+      const email = req.headers.get("x-user-email") || "";
 
-      if (!token) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-
-      const payload = await verifyToken(token);
-      if (!payload) {
+      if (!userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
 
@@ -41,14 +34,14 @@ export function withAuth(handler: AuthenticatedHandler) {
       }
 
       const authCtx: AuthenticatedContext = {
-        userId: payload.userId,
-        email: payload.email || "",
+        userId,
+        email,
         params: resolvedParams,
       };
 
       return await handler(req, authCtx);
     } catch (error) {
-      console.error("Auth proxy error:", error);
+      console.error("Auth proxy helper error:", error);
       return NextResponse.json(
         { error: "Something went wrong during authorization check" },
         { status: 500 }
