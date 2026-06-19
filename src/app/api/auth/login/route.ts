@@ -5,6 +5,7 @@ import { signToken, verifyToken } from "@/services/auth";
 import { getUserProfile, createUserProfile } from "@/services/db-service";
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { handleApiError, ValidationError, UnauthorizedError } from "@/lib/errors";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address").optional(),
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     if (!result.success) {
       const errorMsg = result.error.issues.map((i) => i.message).join(", ");
-      return NextResponse.json({ error: errorMsg }, { status: 400 });
+      throw new ValidationError(errorMsg);
     }
 
     const { email, password, idToken } = result.data;
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
       // Firebase flow
       const payload = await verifyToken(idToken);
       if (!payload) {
-        return NextResponse.json({ error: "Invalid Firebase ID token" }, { status: 401 });
+        throw new UnauthorizedError("Invalid Firebase ID token");
       }
 
       let profile = await getUserProfile(payload.userId);
@@ -58,27 +59,21 @@ export async function POST(req: NextRequest) {
 
     // SQLite / Prisma Flow
     if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+      throw new ValidationError("Email and password are required");
     }
 
     // Find user
     const user = await userRepository.getUserByEmail(email);
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 401 }
-      );
+      throw new UnauthorizedError("Invalid email or password");
     }
 
     // Verify password
     const isPasswordValid = user.passwordHash ? await bcrypt.compare(password, user.passwordHash) : false;
 
     if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 401 }
-      );
+      throw new UnauthorizedError("Invalid email or password");
     }
 
     // Generate JWT token
@@ -107,10 +102,6 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Login route error:", error);
-    return NextResponse.json(
-      { error: "Something went wrong during login" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

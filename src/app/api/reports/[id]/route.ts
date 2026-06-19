@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/proxy";
 import { reportService } from "@/services/report.service";
-import { handleApiError, NotFoundError } from "@/lib/errors";
+import { handleApiError, NotFoundError, ValidationError } from "@/lib/errors";
 
 export const GET = withAuth(async (req: NextRequest, { userId, params }) => {
   try {
     const id = params?.id;
     if (!id || typeof id !== "string") {
-      return NextResponse.json({ error: "Missing report ID" }, { status: 400 });
+      throw new ValidationError("Missing report ID");
     }
     
     const report = await reportService.getWeeklyReportById(userId, id);
@@ -20,3 +20,4 @@ export const GET = withAuth(async (req: NextRequest, { userId, params }) => {
     return handleApiError(error);
   }
 });
+

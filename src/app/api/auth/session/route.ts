@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyToken } from "@/services/auth";
 import { getUserProfile } from "@/services/db-service";
 import { cookies } from "next/headers";
+import { handleApiError, UnauthorizedError } from "@/lib/errors";
 
 export async function GET() {
   try {
@@ -9,23 +10,22 @@ export async function GET() {
     const token = cookieStore.get("token")?.value;
 
     if (!token) {
-      return NextResponse.json({ user: null }, { status: 401 });
+      throw new UnauthorizedError("No token found");
     }
 
     const payload = await verifyToken(token);
     if (!payload) {
-      return NextResponse.json({ user: null }, { status: 401 });
+      throw new UnauthorizedError("Invalid token");
     }
 
     const user = await getUserProfile(payload.userId);
 
     if (!user) {
-      return NextResponse.json({ user: null }, { status: 401 });
+      throw new UnauthorizedError("User profile not found");
     }
 
     return NextResponse.json({ user });
   } catch (error) {
-    console.error("Session error:", error);
-    return NextResponse.json({ error: "Failed to fetch session" }, { status: 500 });
+    return handleApiError(error);
   }
 }

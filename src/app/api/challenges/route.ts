@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/proxy";
 import { WEEKLY_CHALLENGES } from "@/utils/challenges-list";
+import { handleApiError, ValidationError, NotFoundError } from "@/lib/errors";
 import { 
   getUserChallenges, 
   joinChallenge, 
@@ -43,8 +44,7 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
       userChallenges,
     });
   } catch (error) {
-    console.error("Fetch challenges error:", error);
-    return NextResponse.json({ error: "Failed to fetch challenges" }, { status: 500 });
+    return handleApiError(error);
   }
 });
 
@@ -54,7 +54,7 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
     const validation = joinChallengeSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
+      throw new ValidationError("Invalid parameters");
     }
 
     const { challengeCode } = validation.data;
@@ -66,7 +66,7 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
 
     const challengeExists = combinedCatalog.some((c) => c.code === challengeCode);
     if (!challengeExists) {
-      return NextResponse.json({ error: "Challenge not found in catalog" }, { status: 404 });
+      throw new NotFoundError("Challenge not found in catalog");
     }
 
     // Join challenge using db-service (it automatically checks for duplicates)
@@ -74,12 +74,10 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
       const userChallenge = await joinChallenge(userId, challengeCode);
       return NextResponse.json({ userChallenge }, { status: 201 });
     } catch (e) {
-      const errMsg = e instanceof Error ? e.message : "Failed to join challenge";
-      return NextResponse.json({ error: errMsg }, { status: 400 });
+      throw new ValidationError(e instanceof Error ? e.message : "Failed to join challenge");
     }
   } catch (error) {
-    console.error("Join challenge error:", error);
-    return NextResponse.json({ error: "Failed to join challenge" }, { status: 500 });
+    return handleApiError(error);
   }
 });
 
@@ -89,7 +87,7 @@ export const PATCH = withAuth(async (req: NextRequest, { userId }) => {
     const validation = completeChallengeSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
+      throw new ValidationError("Invalid parameters");
     }
 
     const { id } = validation.data;
@@ -104,12 +102,12 @@ export const PATCH = withAuth(async (req: NextRequest, { userId }) => {
     const enrollment = userChallenges.find((uc: UserChallenge) => uc.id === id && uc.status === "JOINED");
 
     if (!enrollment) {
-      return NextResponse.json({ error: "Challenge enrollment not found or already completed" }, { status: 404 });
+      throw new NotFoundError("Challenge enrollment not found or already completed");
     }
 
     const catalogChallenge = combinedCatalog.find((c) => c.code === enrollment.challengeCode);
     if (!catalogChallenge) {
-      return NextResponse.json({ error: "Challenge catalog entry missing" }, { status: 404 });
+      throw new NotFoundError("Challenge catalog entry missing");
     }
 
     // Complete using db-service
@@ -141,7 +139,6 @@ export const PATCH = withAuth(async (req: NextRequest, { userId }) => {
 
     return NextResponse.json({ userChallenge: updated, pointsAwarded });
   } catch (error) {
-    console.error("Complete challenge error:", error);
-    return NextResponse.json({ error: "Failed to complete challenge" }, { status: 500 });
+    return handleApiError(error);
   }
 });

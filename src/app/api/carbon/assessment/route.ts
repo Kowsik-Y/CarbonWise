@@ -12,6 +12,7 @@ import {
 } from "@/services/db-service";
 import { z } from "zod";
 import { CarbonAssessment } from "@/types";
+import { handleApiError, ValidationError } from "@/lib/errors";
 
 const assessmentSchema = z.object({
   transportKm: z.number().min(0),
@@ -29,8 +30,7 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
 
     return NextResponse.json({ assessment });
   } catch (error) {
-    console.error("Fetch assessment error:", error);
-    return NextResponse.json({ error: "Failed to fetch assessment" }, { status: 500 });
+    return handleApiError(error);
   }
 });
 
@@ -40,7 +40,7 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
     const validation = assessmentSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json({ error: "Invalid assessment data" }, { status: 400 });
+      throw new ValidationError("Invalid assessment data");
     }
 
     const inputData = validation.data;
@@ -100,8 +100,7 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
       pointsAwarded,
     });
   } catch (error) {
-    console.error("Save assessment error:", error);
-    return NextResponse.json({ error: "Failed to save assessment" }, { status: 500 });
+    return handleApiError(error);
   }
 });
 
@@ -113,7 +112,6 @@ export const DELETE = withAuth(async (req: NextRequest, { userId }) => {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Reset assessment error:", error);
-    return NextResponse.json({ error: "Failed to reset assessments" }, { status: 500 });
+    return handleApiError(error);
   }
 });

@@ -22,7 +22,7 @@ interface ChartsProps {
     wasteEmissions: number;
   };
   history: Array<{
-    createdAt: string;
+    createdAt: string | Date;
     annualFootprint: number;
     carbonScore: number;
   }>;
@@ -37,7 +37,15 @@ const CATEGORY_COLORS = {
 };
 
 // Custom tooltips declared outside render to prevent recreation/state resets
-const CustomTooltip = ({ active, payload }: any) => {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    name: string;
+    value: number;
+  }>;
+}
+
+const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-xl border border-white/10 bg-[#0c1319] p-3 shadow-xl">
@@ -51,7 +59,17 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-const HistoryTooltip = ({ active, payload }: any) => {
+interface HistoryTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    payload: {
+      date: string;
+    };
+  }>;
+}
+
+const HistoryTooltip = ({ active, payload }: HistoryTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-xl border border-white/10 bg-[#0c1319] p-3 shadow-xl space-y-1">

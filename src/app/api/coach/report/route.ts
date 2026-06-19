@@ -7,6 +7,7 @@ import {
   getUserChallenges 
 } from "@/services/db-service";
 import { Goal, UserChallenge } from "@/types";
+import { handleApiError } from "@/lib/errors";
 
 export const GET = withAuth(async (req: NextRequest, { userId }) => {
   try {
@@ -29,7 +30,7 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
 
     return NextResponse.json({ report });
   } catch (error) {
-    console.error("AI Coach Evaluation Report API error:", error);
-    return NextResponse.json({ error: "Failed to generate evaluation report" }, { status: 500 });
+    return handleApiError(error);
   }
 });
+

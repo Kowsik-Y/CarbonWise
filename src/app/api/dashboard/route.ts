@@ -9,6 +9,7 @@ import {
   getUserAchievements 
 } from "@/services/db-service";
 import { Goal, UserChallenge, Achievement } from "@/types";
+import { handleApiError, NotFoundError } from "@/lib/errors";
 
 export const GET = withAuth(async (req: NextRequest, { userId }) => {
   try {
@@ -17,7 +18,7 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
     const user = await getUserProfile(userId);
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      throw new NotFoundError("User not found");
     }
 
     // 2. Fetch latest assessment
@@ -56,7 +57,7 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
       achievements,
     });
   } catch (error) {
-    console.error("Dashboard api error:", error);
-    return NextResponse.json({ error: "Failed to load dashboard data" }, { status: 500 });
+    return handleApiError(error);
   }
 });
+

@@ -5,6 +5,7 @@ import { signToken, verifyToken } from "@/services/auth";
 import { createUserProfile, getUserProfile } from "@/services/db-service";
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { handleApiError, ValidationError, UnauthorizedError, ConflictError } from "@/lib/errors";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").optional(),
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     if (!result.success) {
       const errorMsg = result.error.issues.map((i) => i.message).join(", ");
-      return NextResponse.json({ error: errorMsg }, { status: 400 });
+      throw new ValidationError(errorMsg);
     }
 
     const { name, email, password, idToken } = result.data;
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
     if (isFirebase && idToken) {
       const payload = await verifyToken(idToken);
       if (!payload) {
-        return NextResponse.json({ error: "Invalid Firebase ID token" }, { status: 401 });
+        throw new UnauthorizedError("Invalid Firebase ID token");
       }
 
       let profile = await getUserProfile(payload.userId);
@@ -57,17 +58,14 @@ export async function POST(req: NextRequest) {
 
     // Custom SQL / Prisma signup flow
     if (!name || !email || !password) {
-      return NextResponse.json({ error: "Name, email and password are required" }, { status: 400 });
+      throw new ValidationError("Name, email and password are required");
     }
 
     // Check if user already exists
     const existingUser = await userRepository.getUserByEmail(email);
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: "User with this email already exists" },
-        { status: 409 }
-      );
+      throw new ConflictError("User with this email already exists");
     }
 
     // Hash password
@@ -109,10 +107,6 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Signup route error:", error);
-    return NextResponse.json(
-      { error: "Something went wrong during signup" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

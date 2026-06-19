@@ -7,7 +7,7 @@ const JWT_SECRET = new TextEncoder().encode(
 const FIREBASE_JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 
 // Create remote JWKS to verify Firebase tokens signed by Google
-let JWKS: any = null;
+let JWKS: ReturnType<typeof createRemoteJWKSet> | null = null;
 try {
   JWKS = createRemoteJWKSet(new URL(FIREBASE_JWKS_URL));
 } catch (e) {

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export interface AuthenticatedContext {
   userId: string;
   email: string;
-  params: any;
+  params: Record<string, string | string[]> | undefined;
 }
 
 export type AuthenticatedHandler = (
@@ -16,7 +16,7 @@ export type AuthenticatedHandler = (
  * Exposes the authenticated context injected by the global proxy middleware.
  */
 export function withAuth(handler: AuthenticatedHandler) {
-  return async (req: NextRequest, context?: { params?: Promise<any> | any }) => {
+  return async (req: NextRequest, context?: { params?: Promise<Record<string, string | string[]>> | Record<string, string | string[]> }) => {
     try {
       const userId = req.headers.get("x-user-id");
       const email = req.headers.get("x-user-email") || "";
@@ -26,11 +26,11 @@ export function withAuth(handler: AuthenticatedHandler) {
       }
 
       // Next.js params can be a Promise or raw object depending on environment
-      let resolvedParams = {};
+      let resolvedParams: Record<string, string | string[]> = {};
       if (context && context.params) {
-        resolvedParams = typeof context.params.then === "function" 
-          ? await context.params 
-          : context.params;
+        resolvedParams = typeof (context.params as { then?: unknown }).then === "function" 
+          ? await (context.params as Promise<Record<string, string | string[]>>) 
+          : (context.params as Record<string, string | string[]>);
       }
 
       const authCtx: AuthenticatedContext = {

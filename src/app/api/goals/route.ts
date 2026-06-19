@@ -10,6 +10,7 @@ import {
 } from "@/services/db-service";
 import { z } from "zod";
 import { Goal } from "@/types";
+import { handleApiError, ValidationError, NotFoundError } from "@/lib/errors";
 
 const createGoalSchema = z.object({
   title: z.string().min(2),
@@ -29,8 +30,7 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
 
     return NextResponse.json({ goals });
   } catch (error) {
-    console.error("Fetch goals error:", error);
-    return NextResponse.json({ error: "Failed to fetch goals" }, { status: 500 });
+    return handleApiError(error);
   }
 });
 
@@ -40,7 +40,7 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
     const validation = createGoalSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json({ error: "Invalid goal parameters" }, { status: 400 });
+      throw new ValidationError("Invalid goal parameters");
     }
 
     const { title, category, co2Reduction, difficulty } = validation.data;
@@ -50,10 +50,7 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
     const activeCount = goalsList.filter((g: Goal) => g.status === "ACTIVE").length;
 
     if (activeCount >= 10) {
-      return NextResponse.json(
-        { error: "You can have a maximum of 10 active goals. Complete some first!" },
-        { status: 400 }
-      );
+      throw new ValidationError("You can have a maximum of 10 active goals. Complete some first!");
     }
 
     const goal = await addGoal(userId, {
@@ -65,8 +62,7 @@ export const POST = withAuth(async (req: NextRequest, { userId }) => {
 
     return NextResponse.json({ goal }, { status: 201 });
   } catch (error) {
-    console.error("Create goal error:", error);
-    return NextResponse.json({ error: "Failed to create goal" }, { status: 500 });
+    return handleApiError(error);
   }
 });
 
@@ -76,7 +72,7 @@ export const PATCH = withAuth(async (req: NextRequest, { userId }) => {
     const validation = updateGoalSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json({ error: "Invalid request payload" }, { status: 400 });
+      throw new ValidationError("Invalid request payload");
     }
 
     const { id, status } = validation.data;
@@ -85,11 +81,11 @@ export const PATCH = withAuth(async (req: NextRequest, { userId }) => {
     const goal = goalsList.find((g: Goal) => g.id === id);
 
     if (!goal) {
-      return NextResponse.json({ error: "Goal not found" }, { status: 404 });
+      throw new NotFoundError("Goal not found");
     }
 
     if (goal.status === "COMPLETED" && status === "COMPLETED") {
-      return NextResponse.json({ error: "Goal is already completed" }, { status: 400 });
+      throw new ValidationError("Goal is already completed");
     }
 
     const updatedGoal = await updateGoal(userId, id, status);
@@ -126,7 +122,6 @@ export const PATCH = withAuth(async (req: NextRequest, { userId }) => {
 
     return NextResponse.json({ goal: updatedGoal, pointsAwarded });
   } catch (error) {
-    console.error("Update goal error:", error);
-    return NextResponse.json({ error: "Failed to update goal" }, { status: 500 });
+    return handleApiError(error);
   }
 });
