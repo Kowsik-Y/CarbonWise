@@ -1,5 +1,6 @@
 import { CarbonAssessment, AssessmentInput, Challenge, AIRecommendation, SimulatorOptimization } from "@/types";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { logger } from "@/lib/logger";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -89,9 +90,9 @@ Guidelines:
       if (text) {
         return text.trim();
       }
-      console.warn("Gemini API call returned empty response, falling back to local heuristic coach.");
+      logger.warn("Gemini API call returned empty response, falling back to local heuristic coach.");
     } catch (e) {
-      console.error("Gemini API SDK error:", e);
+      logger.error("Gemini API SDK error", e);
     }
   }
 
@@ -330,7 +331,7 @@ Guidelines:
       const text = result.response.text();
       if (text) return text.trim();
     } catch (e) {
-      console.error("Gemini API Evaluation Report error:", e);
+      logger.error("Gemini API Evaluation Report error", e);
     }
   }
 
@@ -393,7 +394,7 @@ Return ONLY a valid JSON object containing these keys. Do not include markdown c
         return JSON.parse(cleanJson(resText));
       }
     } catch (e) {
-      console.error("Gemini parse assessment error:", e);
+      logger.error("Gemini parse assessment error", e);
     }
   }
 
@@ -485,7 +486,7 @@ Do not include any wrapping markdown formatting (like \`\`\`json) or extra text.
         return JSON.parse(cleanJson(resText));
       }
     } catch (e) {
-      console.error("Gemini dynamic challenges error:", e);
+      logger.error("Gemini dynamic challenges error", e);
     }
   }
 
@@ -573,7 +574,7 @@ Do not include markdown code block syntax. Return only raw JSON.
         return JSON.parse(cleanJson(resText));
       }
     } catch (e) {
-      console.error("Gemini dynamic recommendations error:", e);
+      logger.error("Gemini dynamic recommendations error", e);
     }
   }
 
@@ -644,7 +645,7 @@ Do not include markdown code block syntax. Return only raw JSON.
         return JSON.parse(cleanJson(resText));
       }
     } catch (e) {
-      console.error("Gemini simulator optimization error:", e);
+      logger.error("Gemini simulator optimization error", e);
     }
   }
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 export interface AuthenticatedContext {
   userId: string;
@@ -41,7 +42,7 @@ export function withAuth(handler: AuthenticatedHandler) {
 
       return await handler(req, authCtx);
     } catch (error) {
-      console.error("Auth proxy helper error:", error);
+      logger.error("Auth proxy helper error", error);
       return NextResponse.json(
         { error: "Something went wrong during authorization check" },
         { status: 500 }

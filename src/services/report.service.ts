@@ -4,6 +4,7 @@ import { goalRepository } from "@/repositories/goal.repository";
 import { challengeRepository } from "@/repositories/challenge.repository";
 import { WeeklyReport } from "@/types";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { logger } from "@/lib/logger";
 
 export class ReportService {
   async getWeeklyReports(userId: string): Promise<WeeklyReport[]> {
@@ -98,7 +99,7 @@ Return ONLY a valid JSON object with keys "topAccomplishment", "missedOpportunit
             : parsed.recommendedActions || "";
         }
       } catch (e) {
-        console.error("Gemini Weekly Report Generation failed, using local fallback:", e);
+        logger.error("Gemini Weekly Report Generation failed, using local fallback", e);
       }
     }
 

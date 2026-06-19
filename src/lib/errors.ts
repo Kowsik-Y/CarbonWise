@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { logger } from "@/lib/logger";
 
 export class AppError extends Error {
   constructor(
@@ -43,7 +44,7 @@ export class ConflictError extends AppError {
 }
 
 export function handleApiError(error: unknown) {
-  console.error("API Error encountered:", error);
+  logger.error("API Error encountered", error);
 
   if (error instanceof AppError) {
     return NextResponse.json(

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isFirebaseConfigured, db } from "@/lib/firebase";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   let dbStatus = "disconnected";
@@ -15,7 +16,7 @@ export async function GET() {
       dbStatus = "connected";
     }
   } catch (error) {
-    console.error("Healthcheck database connection error:", error);
+    logger.error("Healthcheck database connection error", error);
     dbStatus = "disconnected";
   }
 

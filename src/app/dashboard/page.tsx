@@ -9,6 +9,7 @@ import { DashboardCharts } from "@/features/dashboard/dashboard-charts";
 import { getCarbonEquivalents } from "@/utils/carbon-calculator";
 import { BarChart2, Leaf, Target, Award, ArrowRight, Activity, Calendar, Zap, Sparkles } from "lucide-react";
 import { CarbonAssessment, Goal, Achievement } from "@/types";
+import { logger } from "@/lib/logger";
 
 interface DashboardData {
   latestAssessment: CarbonAssessment;
@@ -55,7 +56,7 @@ export default function DashboardPage() {
         setDashboardData(data);
       }
     } catch (e) {
-      console.error(e);
+      logger.error("Failed to fetch dashboard data", e);
     } finally {
       setFetching(false);
     }

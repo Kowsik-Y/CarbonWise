@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify, createRemoteJWKSet } from "jose";
+import { logger } from "@/lib/logger";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "carbonwise_super_secret_key_123456789_at_least_32_chars"
@@ -11,7 +12,7 @@ let JWKS: ReturnType<typeof createRemoteJWKSet> | null = null;
 try {
   JWKS = createRemoteJWKSet(new URL(FIREBASE_JWKS_URL));
 } catch (e) {
-  console.error("Failed to initialize remote JWK Set for Firebase", e);
+  logger.error("Failed to initialize remote JWK Set for Firebase", e);
 }
 
 export async function signToken(payload: { userId: string; email: string }) {
@@ -37,7 +38,7 @@ export async function verifyToken(token: string) {
         email: payload.email as string 
       };
     } catch (error) {
-      console.error("Firebase ID Token verification error:", error);
+      logger.error("Firebase ID Token verification error", error);
       return null;
     }
   } else {
