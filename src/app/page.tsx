@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-context";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
@@ -9,10 +10,18 @@ import { Leaf, Compass, MessageSquare, Target, Trophy, Sparkles, ArrowRight, Bar
 
 export default function Home() {
   const { user, loading } = useAuth();
+  const router = useRouter();
 
-  React.useEffect(() => {
+  useEffect(() => {
     document.title = "CarbonWise - Track Less, Reduce More";
   }, []);
+
+  // Redirect to dashboard if logged in to prevent landing page blinking/shifting
+  useEffect(() => {
+    if (!loading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, loading, router]);
 
   // Interactive preview slider state
   const [kms, setKms] = useState(30);

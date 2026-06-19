@@ -50,7 +50,7 @@ export function Navigation() {
 
           {/* Desktop Nav — hidden while auth resolves to prevent flash */}
           {!loading && isLoggedIn && (
-            <div className="hidden md:block">
+            <div className="hidden md:block animate-fade-in">
               <div className="flex items-center gap-1">
                 {navLinks.map((link) => {
                   const Icon = link.icon;
@@ -80,7 +80,7 @@ export function Navigation() {
               // Stable placeholder while Firebase resolves auth state
               <div className="h-8 w-24 rounded-xl bg-white/5 animate-pulse" />
             ) : isLoggedIn ? (
-              <>
+              <div className="flex items-center gap-4 animate-fade-in">
                 {/* User Badges */}
                 <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-3 py-1.5 text-xs font-semibold text-gray-200">
                   <span className="flex h-2 w-2 rounded-full bg-brand animate-pulse" />
@@ -97,9 +97,9 @@ export function Navigation() {
                 >
                   <LogOut className="h-4 w-4" />
                 </button>
-              </>
+              </div>
             ) : (
-              <div className="hidden md:flex gap-2">
+              <div className="hidden md:flex gap-2 animate-fade-in">
                 <Link
                   href="/auth?mode=login"
                   className="rounded-xl px-4 py-2 text-sm font-medium text-gray-300 hover:text-white"

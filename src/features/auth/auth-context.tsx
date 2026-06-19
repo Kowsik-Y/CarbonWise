@@ -8,7 +8,9 @@ import {
   createUserWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup
 } from "firebase/auth";
 
 interface AuthContextType {
@@ -16,6 +18,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
   showToast: (message: string, type?: "success" | "error" | "info") => void;
@@ -182,6 +185,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async () => {
+    if (isFirebaseConfigured && auth) {
+      try {
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        const userCredential = await signInWithPopup(auth, provider);
+        const firebaseUser = userCredential.user;
+        const idToken = await firebaseUser.getIdToken();
+
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken, email: firebaseUser.email }),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          setUser(data.user);
+          return { success: true };
+        }
+        return { success: false, error: data.error || "Login validation failed" };
+      } catch (err: any) {
+        if (err.code === "auth/popup-closed-by-user") {
+          return { success: false, error: "Sign-in cancelled by user." };
+        }
+        return { success: false, error: err.message || "Google Sign-In failed" };
+      }
+    }
+    return { success: false, error: "Firebase is not configured." };
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -189,6 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         login,
         signup,
+        loginWithGoogle,
         logout,
         refreshSession,
         showToast,
