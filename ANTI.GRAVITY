@@ -1,0 +1,238 @@
+You are a Senior Staff Engineer, Product Designer, Security Engineer, Accessibility Specialist, and Sustainability Expert.
+
+Build a production-ready Next.js 15 application called "CarbonWise AI".
+
+MISSION
+
+Design a solution that helps individuals understand, track, and reduce their carbon footprint through simple actions and personalized AI-driven insights.
+
+PRIMARY GOAL
+
+Create a smart sustainability assistant that:
+
+* Calculates carbon footprint
+* Identifies major emission sources
+* Generates personalized reduction recommendations
+* Simulates impact of lifestyle changes
+* Tracks progress over time
+* Motivates behavioral change
+
+TECH STACK
+
+* Next.js 15 App Router
+* TypeScript (strict mode)
+* Tailwind CSS
+* shadcn/ui
+* Prisma ORM
+* PostgreSQL
+* React Hook Form
+* Zod Validation
+* Recharts
+* Framer Motion
+* Vitest
+* Playwright
+* ESLint
+* Prettier
+
+ARCHITECTURE REQUIREMENTS
+
+Use:
+
+* Feature-based architecture
+* SOLID principles
+* Reusable components
+* Server Components where possible
+* Server Actions
+* Clean separation of concerns
+* Dependency inversion
+* Strong typing everywhere
+
+APPLICATION PAGES
+
+1. Landing Page
+2. Carbon Assessment
+3. AI Coach
+4. Dashboard
+5. Goals Page
+6. Challenges Page
+7. Profile Page
+8. Settings Page
+
+CORE FEATURES
+
+1. Carbon Footprint Calculator
+
+Collect:
+
+* Transportation
+* Electricity
+* Diet
+* Shopping
+* Waste
+
+Generate:
+
+* Monthly CO₂
+* Annual CO₂
+* Category breakdown
+
+2. Personalized AI Insights
+
+Analyze user data and generate:
+
+* Biggest emission contributors
+* Recommended actions
+* Potential reduction estimates
+* Difficulty score
+* Expected impact score
+
+3. Carbon Reduction Simulator
+
+Allow users to change lifestyle assumptions and instantly view projected reductions.
+
+4. Goal Tracking
+
+Users can:
+
+* Create goals
+* Track completion
+* Monitor progress
+
+5. Weekly Challenges
+
+Generate sustainability challenges.
+
+Examples:
+
+* No-Car Day
+* Vegetarian Day
+* Energy Saver Week
+
+6. AI Sustainability Assistant
+
+Conversational assistant that answers sustainability questions using user context.
+
+DASHBOARD
+
+Display:
+
+* Total emissions
+* Category chart
+* Progress chart
+* Goal completion
+* Carbon reduction trend
+* Challenge achievements
+
+SECURITY REQUIREMENTS
+
+Implement:
+
+* Input validation using Zod
+* CSRF protection
+* XSS prevention
+* SQL injection prevention via Prisma
+* Secure authentication
+* Rate limiting
+* Environment variable validation
+* Secure headers
+* Principle of least privilege
+
+ACCESSIBILITY REQUIREMENTS
+
+Achieve WCAG 2.1 AA compliance.
+
+Include:
+
+* Keyboard navigation
+* Screen reader support
+* Proper labels
+* Semantic HTML
+* ARIA attributes
+* Color contrast compliance
+* Focus management
+* Reduced motion support
+
+PERFORMANCE REQUIREMENTS
+
+* Lighthouse score above 95
+* Server Components
+* Dynamic imports
+* Lazy loading
+* Image optimization
+* Bundle optimization
+* Caching strategy
+
+TESTING REQUIREMENTS
+
+Create:
+
+* Unit tests
+* Integration tests
+* E2E tests
+
+Minimum coverage target:
+
+80%
+
+CODE QUALITY REQUIREMENTS
+
+* Strict TypeScript
+* No any types
+* Clean architecture
+* Reusable hooks
+* Reusable services
+* Comprehensive comments where needed
+* Consistent naming conventions
+
+DATABASE MODELS
+
+User
+CarbonAssessment
+EmissionCategory
+Recommendation
+Goal
+Challenge
+Achievement
+
+README REQUIREMENTS
+
+Generate a professional README including:
+
+* Project Overview
+* Problem Statement
+* Features
+* Architecture
+* Setup Guide
+* Environment Variables
+* Testing Instructions
+* Security Measures
+* Accessibility Features
+* Assumptions
+* Future Improvements
+
+SCORING OPTIMIZATION
+
+Prioritize:
+
+1. Problem Statement Alignment
+2. Accessibility
+3. Code Quality
+4. Security
+5. Testing
+6. Efficiency
+
+OUTPUT REQUIREMENTS
+
+Generate:
+
+* Complete project structure
+* Production-ready code
+* Prisma schema
+* Database models
+* API routes
+* Components
+* Hooks
+* Services
+* Tests
+* README
+
