@@ -16,14 +16,17 @@ interface Achievement {
   unlockedAt: string;
 }
 
+import { useApi } from "@/hooks/use-api";
+
 export default function ProfilePage() {
   const { user, logout, refreshSession, loading, showToast } = useAuth();
   const router = useRouter();
 
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [fetching, setFetching] = useState(true);
-  const [resetting, setResetting] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
+
+  const { loading: fetching, request: getDashboard } = useApi<{ achievements: Achievement[] }>();
+  const { loading: resetting, request: deleteAssessment } = useApi<unknown>();
 
   useEffect(() => {
     document.title = "Your Profile | CarbonWise";
@@ -32,45 +35,31 @@ export default function ProfilePage() {
       return;
     }
 
+    const fetchProfileData = async () => {
+      try {
+        const data = await getDashboard("/api/dashboard");
+        setAchievements(data.achievements || []);
+      } catch {
+        // useApi handles state logging
+      }
+    };
+
     if (user) {
       fetchProfileData();
     }
-  }, [user, loading, router]);
-
-  const fetchProfileData = async () => {
-    try {
-      const res = await fetch("/api/dashboard");
-      if (res.ok) {
-        const data = await res.json();
-        setAchievements(data.achievements || []);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setFetching(false);
-    }
-  };
+  }, [user, loading, router, getDashboard]);
 
   const handleResetAssessment = async () => {
     setShowResetDialog(false);
-    setResetting(true);
     try {
-      const res = await fetch("/api/carbon/assessment", {
+      await deleteAssessment("/api/carbon/assessment", {
         method: "DELETE",
       });
-
-      if (res.ok) {
-        showToast("Assessment history reset successfully. Let's recalculate your footprint!", "success");
-        await refreshSession();
-        router.push("/assessment");
-      } else {
-        router.push("/assessment");
-      }
-    } catch (e) {
-      console.error(e);
+      showToast("Assessment history reset successfully. Let's recalculate your footprint!", "success");
+      await refreshSession();
       router.push("/assessment");
-    } finally {
-      setResetting(false);
+    } catch {
+      router.push("/assessment");
     }
   };
 

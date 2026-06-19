@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-context";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { DashboardCharts } from "@/features/dashboard/dashboard-charts";
-import { getCarbonEquivalents } from "@/utils/carbon-calculator";
-import { BarChart2, Leaf, Target, Award, ArrowRight, Activity, Calendar, Zap, Sparkles } from "lucide-react";
+import { Leaf, Target, Award, ArrowRight, Activity, Calendar, Zap, Sparkles } from "lucide-react";
 import { CarbonAssessment, Goal, Achievement } from "@/types";
-import { logger } from "@/lib/logger";
+
+import { useApi } from "@/hooks/use-api";
 
 interface DashboardData {
   latestAssessment: CarbonAssessment;
@@ -29,8 +29,7 @@ export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [fetching, setFetching] = useState(true);
+  const { data: dashboardData, loading: fetching, request } = useApi<DashboardData>();
 
   useEffect(() => {
     document.title = "Dashboard | CarbonWise";
@@ -39,28 +38,22 @@ export default function DashboardPage() {
       return;
     }
 
-    if (user) {
-      fetchDashboardData();
-    }
-  }, [user, loading, router]);
-
-  const fetchDashboardData = async () => {
-    try {
-      const res = await fetch("/api/dashboard");
-      if (res.ok) {
-        const data = await res.json();
+    const fetchDashboardData = async () => {
+      try {
+        const data = await request("/api/dashboard");
         if (!data.latestAssessment) {
           router.push("/assessment"); // redirect to assess if new user
           return;
         }
-        setDashboardData(data);
+      } catch {
+        // useApi handles state logging
       }
-    } catch (e) {
-      logger.error("Failed to fetch dashboard data", e);
-    } finally {
-      setFetching(false);
+    };
+
+    if (user) {
+      fetchDashboardData();
     }
-  };
+  }, [user, loading, router, request]);
 
   if (loading || fetching || !dashboardData || !user) {
     return (
@@ -70,8 +63,7 @@ export default function DashboardPage() {
     );
   }
 
-  const { latestAssessment, assessmentsHistory, goals, challenges, achievements } = dashboardData;
-  const eq = getCarbonEquivalents(latestAssessment.annualFootprint);
+  const { latestAssessment, assessmentsHistory, goals, achievements } = dashboardData;
 
   // Generate Score AI Explanation
   const total = latestAssessment.annualFootprint || 1;

@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-context";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { Trophy, Leaf, Zap, Shield, Check, Plus, AlertCircle, Sparkles } from "lucide-react";
+import { Trophy, Zap, Check, Plus, Sparkles } from "lucide-react";
 import { Challenge } from "@/types";
+import { useApi } from "@/hooks/use-api";
 
 interface UserChallenge {
   id: string;
@@ -20,9 +21,11 @@ export default function ChallengesPage() {
 
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [userChallenges, setUserChallenges] = useState<UserChallenge[]>([]);
-  const [fetching, setFetching] = useState(true);
-
   const [processingCode, setProcessingCode] = useState<string | null>(null);
+
+  const { loading: fetching, request: getChallenges } = useApi<{ challenges: Challenge[]; userChallenges: UserChallenge[] }>();
+  const { request: joinChallengeRequest } = useApi<unknown>();
+  const { request: completeChallengeRequest } = useApi<{ pointsAwarded: number }>();
 
   useEffect(() => {
     document.title = "Weekly Challenges | CarbonWise";
@@ -31,44 +34,39 @@ export default function ChallengesPage() {
       return;
     }
 
+    const fetchChallenges = async () => {
+      try {
+        const data = await getChallenges("/api/challenges");
+        setChallenges(data.challenges || []);
+        setUserChallenges(data.userChallenges || []);
+      } catch {
+        // useApi handles state logging
+      }
+    };
+
     if (user) {
       fetchChallenges();
     }
-  }, [user, loading, router]);
-
-  const fetchChallenges = async () => {
-    try {
-      const res = await fetch("/api/challenges");
-      if (res.ok) {
-        const data = await res.json();
-        setChallenges(data.challenges || []);
-        setUserChallenges(data.userChallenges || []);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setFetching(false);
-    }
-  };
+  }, [user, loading, router, getChallenges]);
 
   const handleJoinChallenge = async (code: string) => {
     setProcessingCode(code);
     try {
-      const res = await fetch("/api/challenges", {
+      await joinChallengeRequest("/api/challenges", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ challengeCode: code }),
       });
 
-      if (res.ok) {
-        showToast("Joined the challenge! Let's start making progress. 🌿", "success");
-        await fetchChallenges();
-      } else {
-        const err = await res.json();
-        showToast(err.error || "Failed to join challenge", "error");
-      }
-    } catch (e) {
-      console.error(e);
+      showToast("Joined the challenge! Let's start making progress. 🌿", "success");
+      
+      // Refresh the challenges list
+      const data = await getChallenges("/api/challenges");
+      setChallenges(data.challenges || []);
+      setUserChallenges(data.userChallenges || []);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to join challenge";
+      showToast(msg, "error");
     } finally {
       setProcessingCode(null);
     }
@@ -77,33 +75,31 @@ export default function ChallengesPage() {
   const handleCompleteChallenge = async (enrollmentId: string, title: string) => {
     setProcessingCode(enrollmentId);
     try {
-      const res = await fetch("/api/challenges", {
+      const data = await completeChallengeRequest("/api/challenges", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: enrollmentId }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        
-        const confetti = (await import("canvas-confetti")).default;
-        confetti({
-          particleCount: 120,
-          spread: 70,
-          origin: { y: 0.7 },
-          colors: ["#34d399", "#fbbf24", "#60a5fa"],
-        });
+      const confetti = (await import("canvas-confetti")).default;
+      confetti({
+        particleCount: 120,
+        spread: 70,
+        origin: { y: 0.7 },
+        colors: ["#34d399", "#fbbf24", "#60a5fa"],
+      });
 
-        showToast(`Challenge "${title}" completed! Unlocked +${data.pointsAwarded} XP points! 🏆`, "success");
-        
-        await refreshSession();
-        await fetchChallenges();
-      } else {
-        const err = await res.json();
-        showToast(err.error || "Failed to complete challenge", "error");
-      }
-    } catch (e) {
-      console.error(e);
+      showToast(`Challenge "${title}" completed! Unlocked +${data.pointsAwarded} XP points! 🏆`, "success");
+      
+      await refreshSession();
+      
+      // Refresh the challenges list
+      const freshData = await getChallenges("/api/challenges");
+      setChallenges(freshData.challenges || []);
+      setUserChallenges(freshData.userChallenges || []);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to complete challenge";
+      showToast(msg, "error");
     } finally {
       setProcessingCode(null);
     }

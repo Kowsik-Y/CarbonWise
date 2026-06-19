@@ -7,6 +7,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Download, Sparkles, ArrowRight, TrendingUp, Award, AlertTriangle, ArrowLeft } from "lucide-react";
 import { WeeklyReport } from "@/types";
+import { useApi } from "@/hooks/use-api";
 
 export default function ReportsPage() {
   const { user, loading } = useAuth();
@@ -14,32 +15,9 @@ export default function ReportsPage() {
 
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<WeeklyReport | null>(null);
-  const [loadingReports, setLoadingReports] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const fetchReports = async () => {
-    setLoadingReports(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/reports");
-      if (res.ok) {
-        const data = await res.json();
-        setReports(data.reports);
-        if (data.reports.length > 0) {
-          setSelectedReport(data.reports[0]);
-        }
-      } else {
-        const errData = await res.json();
-        setError(errData.error || "Failed to load reports");
-      }
-    } catch (e) {
-      console.error(e);
-      setError("An unexpected error occurred while fetching reports.");
-    } finally {
-      setLoadingReports(false);
-    }
-  };
+  const { loading: loadingReports, error: fetchError, request: getReports } = useApi<{ reports: WeeklyReport[] }>();
+  const { loading: generating, error: genError, request: postReport } = useApi<{ report: WeeklyReport }>();
 
   useEffect(() => {
     document.title = "Weekly Reports | CarbonWise";
@@ -48,37 +26,40 @@ export default function ReportsPage() {
       return;
     }
 
+    const fetchReports = async () => {
+      try {
+        const data = await getReports("/api/reports");
+        setReports(data.reports);
+        if (data.reports.length > 0) {
+          setSelectedReport(data.reports[0]);
+        }
+      } catch {
+        // useApi handles state logging
+      }
+    };
+
     if (user) {
       fetchReports();
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, getReports]);
 
   const handleGenerate = async () => {
-    setGenerating(true);
-    setError(null);
     try {
-      const res = await fetch("/api/reports", {
+      const data = await postReport("/api/reports", {
         method: "POST",
       });
-      if (res.ok) {
-        const data = await res.json();
-        setReports((prev) => [data.report, ...prev]);
-        setSelectedReport(data.report);
-      } else {
-        const errData = await res.json();
-        setError(errData.error || "Failed to generate report. Make sure you have completed an assessment.");
-      }
-    } catch (e) {
-      console.error(e);
-      setError("An error occurred during report generation.");
-    } finally {
-      setGenerating(false);
+      setReports((prev) => [data.report, ...prev]);
+      setSelectedReport(data.report);
+    } catch {
+      // useApi handles state logging
     }
   };
 
   const handlePrint = () => {
     window.print();
   };
+
+  const error = fetchError || genError;
 
   if (loading || (loadingReports && reports.length === 0)) {
     return (

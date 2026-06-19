@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-context";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { Send, Sparkles, MessageSquare, Compass, Terminal, Trash2, ArrowRight } from "lucide-react";
+import { Send, Sparkles, Compass, Terminal, Trash2, ArrowRight } from "lucide-react";
 import { Select } from "@/components/ui/select";
+import { useApi } from "@/hooks/use-api";
+import { CarbonAssessment } from "@/types";
 
 interface Message {
   role: "user" | "assistant";
@@ -79,11 +81,13 @@ export default function CoachPage() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [hasAssessment, setHasAssessment] = useState(false);
-  const [fetching, setFetching] = useState(true);
   const [aiReport, setAiReport] = useState<string>("");
-  const [loadingReport, setLoadingReport] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const { loading: fetching, request: getAssessment } = useApi<{ assessment: CarbonAssessment | null }>();
+  const { loading: loadingReport, request: getCoachReport } = useApi<{ report: string }>();
+  const { request: postChatMessage } = useApi<{ reply: string }>();
 
   useEffect(() => {
     document.title = "AI Coach | CarbonWise";
@@ -92,46 +96,37 @@ export default function CoachPage() {
       return;
     }
 
+    const fetchEvaluationReport = async () => {
+      try {
+        const data = await getCoachReport("/api/coach/report");
+        setAiReport(data.report);
+      } catch {
+        // useApi handles state logging
+      }
+    };
+
+    const checkAssessmentStatus = async () => {
+      try {
+        const data = await getAssessment("/api/carbon/assessment");
+        const hasAss = !!data.assessment;
+        setHasAssessment(hasAss);
+        if (hasAss) {
+          fetchEvaluationReport();
+        }
+      } catch {
+        // useApi handles state logging
+      }
+    };
+
     if (user) {
       checkAssessmentStatus();
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, getAssessment, getCoachReport]);
 
   useEffect(() => {
     // Scroll to bottom on new messages
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
-
-  const checkAssessmentStatus = async () => {
-    try {
-      const res = await fetch("/api/carbon/assessment");
-      const data = await res.json();
-      const hasAss = !!data.assessment;
-      setHasAssessment(hasAss);
-      if (hasAss) {
-        fetchEvaluationReport();
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setFetching(false);
-    }
-  };
-
-  const fetchEvaluationReport = async () => {
-    setLoadingReport(true);
-    try {
-      const res = await fetch("/api/coach/report");
-      if (res.ok) {
-        const data = await res.json();
-        setAiReport(data.report);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingReport(false);
-    }
-  };
 
   const handleSend = async (textToSend: string) => {
     if (!textToSend.trim() || sending) return;
@@ -142,7 +137,7 @@ export default function CoachPage() {
     setSending(true);
 
     try {
-      const res = await fetch("/api/chat", {
+      const data = await postChatMessage("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -151,17 +146,8 @@ export default function CoachPage() {
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: "Sorry, I ran into a connection glitch. Let me try again later." },
-        ]);
-      }
-    } catch (e) {
-      console.error(e);
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+    } catch {
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: "Something went wrong. Make sure your local servers are running." },

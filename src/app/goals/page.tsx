@@ -4,9 +4,9 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-context";
 import { GlassCard } from "@/components/ui/glass-card";
-import { Button } from "@/components/ui/button";
-import { Target, Leaf, Check, Plus, Trash2, CheckCircle2, Star, Award, Sparkles } from "lucide-react";
+import { Target, Check, Plus, CheckCircle2, Sparkles } from "lucide-react";
 import { Goal, AIRecommendation } from "@/types";
+import { useApi } from "@/hooks/use-api";
 
 export default function GoalsPage() {
   const { user, refreshSession, loading, showToast } = useAuth();
@@ -14,14 +14,15 @@ export default function GoalsPage() {
 
   const [activeGoals, setActiveGoals] = useState<Goal[]>([]);
   const [completedGoals, setCompletedGoals] = useState<Goal[]>([]);
-  const [fetching, setFetching] = useState(true);
-
-  // Action planner recommendation list state
   const [recommendedActions, setRecommendedActions] = useState<AIRecommendation[]>([]);
-  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
 
   const [addingId, setAddingId] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
+
+  const { loading: fetching, request: getGoals } = useApi<{ goals: Goal[] }>();
+  const { loading: loadingRecommendations, request: getRecommendations } = useApi<{ recommendations: AIRecommendation[] }>();
+  const { request: postGoal } = useApi<unknown>();
+  const { request: patchGoal } = useApi<{ pointsAwarded: number }>();
 
   useEffect(() => {
     document.title = "Action Planner | CarbonWise";
@@ -30,66 +31,56 @@ export default function GoalsPage() {
       return;
     }
 
+    const fetchGoals = async () => {
+      try {
+        const data = await getGoals("/api/goals");
+        const list: Goal[] = data.goals || [];
+        setActiveGoals(list.filter((g) => g.status === "ACTIVE"));
+        setCompletedGoals(list.filter((g) => g.status === "COMPLETED"));
+      } catch {
+        // useApi handles state logging
+      }
+    };
+
+    const fetchRecommendations = async () => {
+      try {
+        const data = await getRecommendations("/api/goals/recommend");
+        setRecommendedActions(data.recommendations || []);
+      } catch {
+        // useApi handles state logging
+      }
+    };
+
     if (user) {
       fetchGoals();
       fetchRecommendations();
     }
-  }, [user, loading, router]);
-
-  const fetchRecommendations = async () => {
-    setLoadingRecommendations(true);
-    try {
-      const res = await fetch("/api/goals/recommend");
-      if (res.ok) {
-        const data = await res.json();
-        setRecommendedActions(data.recommendations || []);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingRecommendations(false);
-    }
-  };
-
-  const fetchGoals = async () => {
-    try {
-      const res = await fetch("/api/goals");
-      if (res.ok) {
-        const data = await res.json();
-        const list: Goal[] = data.goals || [];
-        setActiveGoals(list.filter((g) => g.status === "ACTIVE"));
-        setCompletedGoals(list.filter((g) => g.status === "COMPLETED"));
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setFetching(false);
-    }
-  };
+  }, [user, loading, router, getGoals, getRecommendations]);
 
   const handleAddGoal = async (title: string, category: string, co2Reduction: number, difficulty: string) => {
     setAddingId(title);
     try {
-      const res = await fetch("/api/goals", {
+      await postGoal("/api/goals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, category, co2Reduction, difficulty }),
       });
 
-      if (res.ok) {
-        const confetti = (await import("canvas-confetti")).default;
-        confetti({
-          particleCount: 30,
-          spread: 30,
-          colors: ["#10b981", "#3b82f6"],
-        });
-        await fetchGoals();
-      } else {
-        const err = await res.json();
-        showToast(err.error || "Failed to add goal", "error");
-      }
-    } catch (e) {
-      console.error(e);
+      const confetti = (await import("canvas-confetti")).default;
+      confetti({
+        particleCount: 30,
+        spread: 30,
+        colors: ["#10b981", "#3b82f6"],
+      });
+
+      // Refresh goals list
+      const data = await getGoals("/api/goals");
+      const list: Goal[] = data.goals || [];
+      setActiveGoals(list.filter((g) => g.status === "ACTIVE"));
+      setCompletedGoals(list.filter((g) => g.status === "COMPLETED"));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to add goal";
+      showToast(msg, "error");
     } finally {
       setAddingId(null);
     }
@@ -98,31 +89,31 @@ export default function GoalsPage() {
   const handleCompleteGoal = async (id: string) => {
     setCompletingId(id);
     try {
-      const res = await fetch("/api/goals", {
+      const data = await patchGoal("/api/goals", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status: "COMPLETED" }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      const confetti = (await import("canvas-confetti")).default;
+      confetti({
+        particleCount: 100,
+        spread: 60,
+        origin: { y: 0.7 },
+        colors: ["#10b981", "#fbbf24", "#60a5fa"],
+      });
 
-        // Play victory confetti
-        const confetti = (await import("canvas-confetti")).default;
-        confetti({
-          particleCount: 100,
-          spread: 60,
-          origin: { y: 0.7 },
-          colors: ["#10b981", "#fbbf24", "#60a5fa"],
-        });
+      showToast(`Goal completed! +${data.pointsAwarded} XP points awarded! 🌟`, "success");
 
-        showToast(`Goal completed! +${data.pointsAwarded} XP points awarded! 🌟`, "success");
+      await refreshSession();
 
-        await refreshSession();
-        await fetchGoals();
-      }
-    } catch (e) {
-      console.error(e);
+      // Refresh goals list
+      const freshData = await getGoals("/api/goals");
+      const list: Goal[] = freshData.goals || [];
+      setActiveGoals(list.filter((g) => g.status === "ACTIVE"));
+      setCompletedGoals(list.filter((g) => g.status === "COMPLETED"));
+    } catch {
+      // useApi handles state logging
     } finally {
       setCompletingId(null);
     }
@@ -234,7 +225,7 @@ export default function GoalsPage() {
                     className="flex justify-between items-center rounded-xl bg-white/2 border border-white/5 px-4 py-3 opacity-60 hover:opacity-100 transition-opacity"
                   >
                     <div>
-                      <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold capitalize">
+                      <span className="text-xs text-gray-500 tracking-wider font-semibold capitalize">
                         {goal.category}
                       </span>
                       <span className="text-xs text-gray-300 font-medium block mt-0.5 line-through">

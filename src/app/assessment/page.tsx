@@ -8,17 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Compass, Car, Flame, FlameKindling, ShoppingBag, Trash2, ChevronRight, ChevronLeft, Award, Sparkles } from "lucide-react";
+import { useApi } from "@/hooks/use-api";
+import { AssessmentInput } from "@/types";
 
 export default function AssessmentPage() {
   const { user, refreshSession, loading, showToast } = useAuth();
   const router = useRouter();
 
   const [step, setStep] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
 
   // AI Autocomplete state
   const [aiPrompt, setAiPrompt] = useState("");
-  const [parsing, setParsing] = useState(false);
 
   // Form State
   const [transportKm, setTransportKm] = useState(25);
@@ -28,6 +28,9 @@ export default function AssessmentPage() {
   const [foodHabits, setFoodHabits] = useState("low_meat");
   const [shoppingHabits, setShoppingHabits] = useState("average");
   const [wasteHabits, setWasteHabits] = useState("recycle_some");
+
+  const { loading: parsing, request: parseRequest } = useApi<{ values: AssessmentInput }>();
+  const { loading: submitting, request: submitRequest } = useApi<unknown>();
 
   // Redirection checks
   useEffect(() => {
@@ -39,35 +42,27 @@ export default function AssessmentPage() {
 
   const handleAiParse = async () => {
     if (!aiPrompt.trim()) return;
-    setParsing(true);
     try {
-      const res = await fetch("/api/carbon/parse-assessment", {
+      const data = await parseRequest("/api/carbon/parse-assessment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: aiPrompt }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        const { values } = data;
-        if (values) {
-          if (typeof values.transportKm === "number") setTransportKm(values.transportKm);
-          if (values.transportType) setTransportType(values.transportType);
-          if (typeof values.electricityBill === "number") setElectricityBill(values.electricityBill);
-          if (values.foodHabits) setFoodHabits(values.foodHabits);
-          if (values.shoppingHabits) setShoppingHabits(values.shoppingHabits);
-          if (values.wasteHabits) setWasteHabits(values.wasteHabits);
+      const { values } = data;
+      if (values) {
+        if (typeof values.transportKm === "number") setTransportKm(values.transportKm);
+        if (values.transportType) setTransportType(values.transportType);
+        if (typeof values.electricityBill === "number") setElectricityBill(values.electricityBill);
+        if (values.foodHabits) setFoodHabits(values.foodHabits);
+        if (values.shoppingHabits) setShoppingHabits(values.shoppingHabits);
+        if (values.wasteHabits) setWasteHabits(values.wasteHabits);
 
-          showToast("AI parsed details and filled the assessment forms! Review and submit. ✨", "success");
-        }
-      } else {
-        showToast("AI parser could not interpret the text. Please fill manually.", "error");
+        showToast("AI parsed details and filled the assessment forms! Review and submit. ✨", "success");
       }
-    } catch (e) {
-      console.error(e);
-      showToast("Error communicating with AI parser.", "error");
-    } finally {
-      setParsing(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error communicating with AI parser";
+      showToast(msg, "error");
     }
   };
 
@@ -96,9 +91,8 @@ export default function AssessmentPage() {
   };
 
   const handleSubmit = async () => {
-    setSubmitting(true);
     try {
-      const res = await fetch("/api/carbon/assessment", {
+      await submitRequest("/api/carbon/assessment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -112,28 +106,22 @@ export default function AssessmentPage() {
         }),
       });
 
-      if (res.ok) {
-        // Trigger high-fidelity confetti celebration
-        const confetti = (await import("canvas-confetti")).default;
-        confetti({
-          particleCount: 150,
-          spread: 80,
-          origin: { y: 0.6 },
-          colors: ["#10b981", "#34d399", "#6ee7b7", "#3b82f6", "#60a5fa"],
-        });
+      // Trigger high-fidelity confetti celebration
+      const confetti = (await import("canvas-confetti")).default;
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ["#10b981", "#34d399", "#6ee7b7", "#3b82f6", "#60a5fa"],
+      });
 
-        await refreshSession();
+      await refreshSession();
 
-        // Show success screen inside wizard
-        setStep(5);
-      } else {
-        showToast("Failed to save assessment. Please check inputs.", "error");
-      }
-    } catch (e) {
-      console.error(e);
-      showToast("Something went wrong.", "error");
-    } finally {
-      setSubmitting(false);
+      // Show success screen inside wizard
+      setStep(5);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong.";
+      showToast(msg, "error");
     }
   };
 

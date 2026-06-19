@@ -7,15 +7,15 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { calculateCarbonFootprint, getCarbonEquivalents } from "@/utils/carbon-calculator";
-import { Sliders, Leaf, ShieldAlert, Check, Plus, AlertCircle, Compass, Sparkles } from "lucide-react";
-import { CarbonAssessment } from "@/types";
+import { Sliders, Leaf, Check, Plus, AlertCircle, Compass, Sparkles } from "lucide-react";
+import { CarbonAssessment, SimulatorOptimization } from "@/types";
+import { useApi } from "@/hooks/use-api";
 
 export default function SimulatorPage() {
   const { user, loading, showToast } = useAuth();
   const router = useRouter();
 
   const [hasAssessment, setHasAssessment] = useState(false);
-  const [fetching, setFetching] = useState(true);
   const [originalAssessment, setOriginalAssessment] = useState<CarbonAssessment | null>(null);
 
   // Simulated State
@@ -28,7 +28,10 @@ export default function SimulatorPage() {
 
   // Goal adding feedback & AI suggestions
   const [addingGoal, setAddingGoal] = useState<string | null>(null);
-  const [loadingAiSuggestion, setLoadingAiSuggestion] = useState(false);
+
+  const { loading: fetching, request: getAssessment } = useApi<{ assessment: CarbonAssessment | null }>();
+  const { loading: loadingAiSuggestion, request: getAiSuggestion } = useApi<{ recommendation: SimulatorOptimization }>();
+  const { request: addGoalRequest } = useApi<unknown>();
 
   useEffect(() => {
     document.title = "Carbon Simulator | CarbonWise";
@@ -37,62 +40,51 @@ export default function SimulatorPage() {
       return;
     }
 
+    const fetchLatestAssessment = async () => {
+      try {
+        const data = await getAssessment("/api/carbon/assessment");
+        if (data.assessment) {
+          const ass = data.assessment;
+          setOriginalAssessment(ass);
+          setHasAssessment(true);
+  
+          // Initialize simulator with actual assessment values
+          setSimTransportKm(ass.transportKm);
+          setSimTransportType(ass.transportType);
+          setSimElectricityBill(ass.electricityBill);
+          setSimFoodHabits(ass.foodHabits);
+          setSimShoppingHabits(ass.shoppingHabits);
+          setSimWasteHabits(ass.wasteHabits);
+        } else {
+          setHasAssessment(false);
+        }
+      } catch {
+        // useApi handles state logging
+      }
+    };
+
     if (user) {
       fetchLatestAssessment();
     }
-  }, [user, loading, router]);
-
-  const fetchLatestAssessment = async () => {
-    try {
-      const res = await fetch("/api/carbon/assessment");
-      const data = await res.json();
-      if (data.assessment) {
-        const ass = data.assessment;
-        setOriginalAssessment(ass);
-        setHasAssessment(true);
-
-        // Initialize simulator with actual assessment values
-        setSimTransportKm(ass.transportKm);
-        setSimTransportType(ass.transportType);
-        setSimElectricityBill(ass.electricityBill);
-        setSimFoodHabits(ass.foodHabits);
-        setSimShoppingHabits(ass.shoppingHabits);
-        setSimWasteHabits(ass.wasteHabits);
-      } else {
-        setHasAssessment(false);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setFetching(false);
-    }
-  };
+  }, [user, loading, router, getAssessment]);
 
   const handleAiSuggest = async () => {
-    setLoadingAiSuggestion(true);
     try {
-      const res = await fetch("/api/simulator/recommend");
-      if (res.ok) {
-        const data = await res.json();
-        const { recommendation } = data;
-        if (recommendation) {
-          if (typeof recommendation.targetTransportKm === "number") setSimTransportKm(recommendation.targetTransportKm);
-          if (recommendation.targetTransportType) setSimTransportType(recommendation.targetTransportType);
-          if (typeof recommendation.targetElectricityBill === "number") setSimElectricityBill(recommendation.targetElectricityBill);
-          if (recommendation.targetFoodHabits) setSimFoodHabits(recommendation.targetFoodHabits);
-          if (recommendation.targetShoppingHabits) setSimShoppingHabits(recommendation.targetShoppingHabits);
-          if (recommendation.targetWasteHabits) setSimWasteHabits(recommendation.targetWasteHabits);
+      const data = await getAiSuggestion("/api/simulator/recommend");
+      const { recommendation } = data;
+      if (recommendation) {
+        if (typeof recommendation.targetTransportKm === "number") setSimTransportKm(recommendation.targetTransportKm);
+        if (recommendation.targetTransportType) setSimTransportType(recommendation.targetTransportType);
+        if (typeof recommendation.targetElectricityBill === "number") setSimElectricityBill(recommendation.targetElectricityBill);
+        if (recommendation.targetFoodHabits) setSimFoodHabits(recommendation.targetFoodHabits);
+        if (recommendation.targetShoppingHabits) setSimShoppingHabits(recommendation.targetShoppingHabits);
+        if (recommendation.targetWasteHabits) setSimWasteHabits(recommendation.targetWasteHabits);
 
-          showToast("AI optimized simulation variables to suggest the highest impact lifestyle reduction! 🌟", "success");
-        }
-      } else {
-        showToast("Failed to load AI suggestions", "error");
+        showToast("AI optimized simulation variables to suggest the highest impact lifestyle reduction! 🌟", "success");
       }
-    } catch (e) {
-      console.error(e);
-      showToast("Error loading AI simulator suggestions", "error");
-    } finally {
-      setLoadingAiSuggestion(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to load AI suggestions";
+      showToast(msg, "error");
     }
   };
 
@@ -146,7 +138,7 @@ export default function SimulatorPage() {
     setAddingGoal(category);
 
     try {
-      const res = await fetch("/api/goals", {
+      await addGoalRequest("/api/goals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -157,22 +149,17 @@ export default function SimulatorPage() {
         }),
       });
 
-      if (res.ok) {
-        const confetti = (await import("canvas-confetti")).default;
-        confetti({
-          particleCount: 40,
-          spread: 40,
-          colors: ["#10b981", "#3b82f6"],
-        });
-        showToast("Goal added to your dashboard! 🚀", "success");
-        setTimeout(() => setAddingGoal(null), 2000);
-      } else {
-        const err = await res.json();
-        showToast(err.error || "Failed to add goal", "error");
-        setAddingGoal(null);
-      }
-    } catch (e) {
-      console.error(e);
+      const confetti = (await import("canvas-confetti")).default;
+      confetti({
+        particleCount: 40,
+        spread: 40,
+        colors: ["#10b981", "#3b82f6"],
+      });
+      showToast("Goal added to your dashboard! 🚀", "success");
+      setTimeout(() => setAddingGoal(null), 2000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to add goal";
+      showToast(msg, "error");
       setAddingGoal(null);
     }
   };
