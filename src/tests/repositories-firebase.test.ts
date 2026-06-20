@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { userRepository } from "@/repositories/user.repository";
 import { assessmentRepository } from "@/repositories/assessment.repository";
@@ -43,7 +42,7 @@ vi.mock("firebase/firestore", () => {
   const mockQuerySnap = {
     empty: false,
     docs: [mockDocSnap],
-    forEach: (callback: any) => callback(mockDocSnap),
+    forEach: (callback: (doc: { exists: () => boolean; id: string; data: () => Record<string, unknown> }) => void) => callback(mockDocSnap),
   };
 
   return {
@@ -115,7 +114,7 @@ describe("Repository Layer Tests (Firebase Path)", () => {
         empty: true,
         docs: [],
         forEach: () => {},
-      } as any);
+      } as unknown as firestore.QuerySnapshot);
 
       const res = await userRepository.addAchievement(
         "test-user-123",
@@ -138,8 +137,8 @@ describe("Repository Layer Tests (Firebase Path)", () => {
             data: () => ({ title: "Pioneer" }),
           },
         ],
-        forEach: (cb: any) => cb({ exists: () => true, id: "existing-ach-id", data: () => ({ title: "Pioneer" }) }),
-      } as any);
+        forEach: (cb: (doc: { exists: () => boolean; id: string; data: () => { title: string } }) => void) => cb({ exists: () => true, id: "existing-ach-id", data: () => ({ title: "Pioneer" }) }),
+      } as unknown as firestore.QuerySnapshot);
 
       const res = await userRepository.addAchievement(
         "test-user-123",
@@ -260,7 +259,7 @@ describe("Repository Layer Tests (Firebase Path)", () => {
         data: () => ({
           userId: "other-user",
         }),
-      } as any);
+      } as unknown as firestore.DocumentSnapshot);
 
       const res = await reportRepository.getWeeklyReportById("test-user-123", "report-1");
       expect(res).toBeNull();

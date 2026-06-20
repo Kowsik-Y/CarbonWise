@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { signToken, verifyToken } from "@/services/auth";
 import { withAuth } from "@/lib/proxy";
@@ -106,7 +105,7 @@ describe("Proxy withAuth helper", () => {
       headers: {
         get: () => { throw new Error("Header crash"); }
       }
-    } as any;
+    } as unknown as NextRequest;
 
     const res = await wrapped(req);
     expect(res.status).toBe(500);

@@ -1,6 +1,6 @@
-/* eslint-disable */
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { userRepository } from "@/repositories/user.repository";
+import { User, CarbonAssessment, Goal, UserChallenge, Achievement, WeeklyReport } from "@prisma/client";
 import { assessmentRepository } from "@/repositories/assessment.repository";
 import { goalRepository } from "@/repositories/goal.repository";
 import { challengeRepository } from "@/repositories/challenge.repository";
@@ -60,7 +60,7 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
   describe("User Repository", () => {
     it("should fetch user profile", async () => {
       const mockUser = { id: "u1", name: "Eco Hero", email: "hero@eco.com", points: 50, level: 1 };
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as unknown as User);
 
       const res = await userRepository.getUserProfile("u1");
       expect(res).toEqual(mockUser);
@@ -72,7 +72,7 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
 
     it("should fetch user by email", async () => {
       const mockUser = { id: "u1", email: "hero@eco.com" };
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as unknown as User);
       const res = await userRepository.getUserByEmail("hero@eco.com");
       expect(res).toEqual(mockUser);
     });
@@ -85,7 +85,7 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
 
     it("should create user profile", async () => {
       const mockUser = { id: "u1", name: "Eco Hero", email: "hero@eco.com", points: 0, level: 1 };
-      vi.mocked(prisma.user.create).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.user.create).mockResolvedValue(mockUser as unknown as User);
 
       const res = await userRepository.createUserProfile("u1", { name: "Eco Hero", email: "hero@eco.com" });
       expect(res).toEqual(mockUser);
@@ -93,14 +93,14 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
 
     it("should create local user credentials", async () => {
       const mockUser = { id: "u1", name: "Eco Hero", email: "hero@eco.com", points: 0, level: 1 };
-      vi.mocked(prisma.user.create).mockResolvedValue(mockUser as any);
+      vi.mocked(prisma.user.create).mockResolvedValue(mockUser as unknown as User);
 
       const res = await userRepository.createUser({ name: "Eco Hero", email: "hero@eco.com", passwordHash: "hash" });
       expect(res).toEqual(mockUser);
     });
 
     it("should update user points", async () => {
-      vi.mocked(prisma.user.update).mockResolvedValue({ points: 200, level: 2 } as any);
+      vi.mocked(prisma.user.update).mockResolvedValue({ points: 200, level: 2 } as unknown as User);
 
       const res = await userRepository.updateUserPoints("u1", 200, 2);
       expect(res).toEqual({ points: 200, level: 2 });
@@ -108,7 +108,7 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
 
     it("should get user achievements", async () => {
       const achievements = [{ id: "a1", userId: "u1", title: "Carbon Pioneer" }];
-      vi.mocked(prisma.achievement.findMany).mockResolvedValue(achievements as any);
+      vi.mocked(prisma.achievement.findMany).mockResolvedValue(achievements as unknown as Achievement[]);
 
       const res = await userRepository.getUserAchievements("u1");
       expect(res).toEqual(achievements);
@@ -117,7 +117,7 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
     it("should add achievement if not exists", async () => {
       const mockAchievement = { id: "a1", title: "Eco King" };
       vi.mocked(prisma.achievement.findFirst).mockResolvedValue(null);
-      vi.mocked(prisma.achievement.create).mockResolvedValue(mockAchievement as any);
+      vi.mocked(prisma.achievement.create).mockResolvedValue(mockAchievement as unknown as Achievement);
 
       const res = await userRepository.addAchievement("u1", "Eco King", "Desc", "icon");
       expect(res).toEqual(mockAchievement);
@@ -125,7 +125,7 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
 
     it("should return existing achievement if already exists", async () => {
       const mockAchievement = { id: "a1", title: "Eco King" };
-      vi.mocked(prisma.achievement.findFirst).mockResolvedValue(mockAchievement as any);
+      vi.mocked(prisma.achievement.findFirst).mockResolvedValue(mockAchievement as unknown as Achievement);
 
       const res = await userRepository.addAchievement("u1", "Eco King", "Desc", "icon");
       expect(res).toEqual(mockAchievement);
@@ -135,7 +135,7 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
   describe("Assessment Repository", () => {
     it("should get latest assessment", async () => {
       const mockAssessment = { id: "ass1", userId: "u1", carbonScore: 90 };
-      vi.mocked(prisma.carbonAssessment.findFirst).mockResolvedValue(mockAssessment as any);
+      vi.mocked(prisma.carbonAssessment.findFirst).mockResolvedValue(mockAssessment as unknown as CarbonAssessment);
 
       const res = await assessmentRepository.getLatestAssessment("u1");
       expect(res).toEqual(mockAssessment);
@@ -149,7 +149,7 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
 
     it("should get history of assessments", async () => {
       const mockHistory = [{ id: "ass1" }, { id: "ass2" }];
-      vi.mocked(prisma.carbonAssessment.findMany).mockResolvedValue(mockHistory as any);
+      vi.mocked(prisma.carbonAssessment.findMany).mockResolvedValue(mockHistory as unknown as CarbonAssessment[]);
 
       const res = await assessmentRepository.getAssessmentsHistory("u1");
       expect(res).toEqual(mockHistory);
@@ -159,7 +159,7 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
   describe("Goal Repository", () => {
     it("should get user goals", async () => {
       const goals = [{ id: "g1", title: "Cycle to work" }];
-      vi.mocked(prisma.goal.findMany).mockResolvedValue(goals as any);
+      vi.mocked(prisma.goal.findMany).mockResolvedValue(goals as unknown as Goal[]);
 
       const res = await goalRepository.getUserGoals("u1");
       expect(res).toEqual(goals);
@@ -167,7 +167,7 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
 
     it("should add a goal", async () => {
       const newGoal = { id: "g1", title: "Cycle" };
-      vi.mocked(prisma.goal.create).mockResolvedValue(newGoal as any);
+      vi.mocked(prisma.goal.create).mockResolvedValue(newGoal as unknown as Goal);
 
       const res = await goalRepository.addGoal("u1", {
         title: "Cycle",
@@ -182,7 +182,7 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
   describe("Challenge Repository", () => {
     it("should join challenge", async () => {
       const enrollment = { id: "ch1", challengeCode: "no-car" };
-      vi.mocked(prisma.userChallenge.create).mockResolvedValue(enrollment as any);
+      vi.mocked(prisma.userChallenge.create).mockResolvedValue(enrollment as unknown as UserChallenge);
 
       const res = await challengeRepository.joinChallenge("u1", "no-car");
       expect(res).toEqual(enrollment);
@@ -191,8 +191,8 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
     it("should complete challenge", async () => {
       const enrollment = { id: "ch1", challengeCode: "no-car", status: "JOINED" };
       const completed = { id: "ch1", challengeCode: "no-car", status: "COMPLETED" };
-      vi.mocked(prisma.userChallenge.findFirst).mockResolvedValue(enrollment as any);
-      vi.mocked(prisma.userChallenge.update).mockResolvedValue(completed as any);
+      vi.mocked(prisma.userChallenge.findFirst).mockResolvedValue(enrollment as unknown as UserChallenge);
+      vi.mocked(prisma.userChallenge.update).mockResolvedValue(completed as unknown as UserChallenge);
 
       const res = await challengeRepository.completeChallenge("u1", "ch1");
       expect(res).toEqual(completed);
@@ -207,7 +207,7 @@ describe("Repository Layer Tests (SQLite Fallback)", () => {
   describe("Report Repository", () => {
     it("should save weekly report", async () => {
       const report = { id: "rep1", carbonReduction: 300 };
-      vi.mocked(prisma.weeklyReport.create).mockResolvedValue(report as any);
+      vi.mocked(prisma.weeklyReport.create).mockResolvedValue(report as unknown as WeeklyReport);
 
       const res = await reportRepository.saveWeeklyReport("u1", {
         carbonReduction: 300,
