@@ -6,7 +6,7 @@ import { z } from "zod";
 import { handleApiError, ValidationError } from "@/lib/errors";
 
 const chatSchema = z.object({
-  message: z.string().min(1),
+  message: z.string().min(1).max(3000),
   history: z
     .array(
       z.object({

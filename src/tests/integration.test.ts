@@ -6,6 +6,7 @@ import { GET as getChallenges, POST as postChallenge, PATCH as patchChallenge } 
 import { GET as getAssessment, POST as postAssessment, DELETE as deleteAssessment } from "@/app/api/carbon/assessment/route";
 import { GET as getDashboard } from "@/app/api/dashboard/route";
 import { POST as postChat } from "@/app/api/chat/route";
+import { POST as postParseAssessment } from "@/app/api/carbon/parse-assessment/route";
 import { goalRepository } from "@/repositories/goal.repository";
 import { challengeRepository } from "@/repositories/challenge.repository";
 import { assessmentRepository } from "@/repositories/assessment.repository";
@@ -68,6 +69,7 @@ vi.mock("@/services/ai-coach", () => {
     generateDynamicChallenges: vi.fn().mockResolvedValue([
       { code: "ai-commute", title: "AI Commute Challenge", category: "transport", difficulty: "easy", duration: "weekly", points: 100, description: "Test description" }
     ]),
+    parseAssessmentFromText: vi.fn().mockResolvedValue({ transportKm: 10 }),
   };
 });
 
@@ -837,6 +839,42 @@ describe("API Route Integration Tests", () => {
       });
       const res = await postChat(req);
       expect(res.status).toBe(500);
+    });
+
+    it("POST: should return 400 if message exceeds 3000 characters", async () => {
+      const req = createAuthedRequest("http://localhost/api/chat", "POST", {
+        message: "a".repeat(3001),
+      });
+      const res = await postChat(req);
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("/api/carbon/parse-assessment Route", () => {
+    it("POST: should parse natural language and return parsed values", async () => {
+      const req = createAuthedRequest("http://localhost/api/carbon/parse-assessment", "POST", {
+        text: "I commute 10km by car and eat vegan diet.",
+      });
+      const res = await postParseAssessment(req);
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.values).toEqual({ transportKm: 10 });
+    });
+
+    it("POST: should return 400 if validation fails", async () => {
+      const req = createAuthedRequest("http://localhost/api/carbon/parse-assessment", "POST", {
+        text: "",
+      });
+      const res = await postParseAssessment(req);
+      expect(res.status).toBe(400);
+    });
+
+    it("POST: should return 400 if text exceeds 3000 characters", async () => {
+      const req = createAuthedRequest("http://localhost/api/carbon/parse-assessment", "POST", {
+        text: "a".repeat(3001),
+      });
+      const res = await postParseAssessment(req);
+      expect(res.status).toBe(400);
     });
   });
 });
