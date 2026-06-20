@@ -15,6 +15,12 @@ try {
   logger.error("Failed to initialize remote JWK Set for Firebase", e);
 }
 
+/**
+ * Signs a payload with HS256 to create a session token.
+ * 
+ * @param payload - Object containing userId and email.
+ * @returns A promise resolving to the signed JWT token.
+ */
 export async function signToken(payload: { userId: string; email: string }) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
@@ -23,6 +29,13 @@ export async function signToken(payload: { userId: string; email: string }) {
     .sign(JWT_SECRET);
 }
 
+/**
+ * Verifies a JWT token. Handles Firebase verification if Firebase is configured,
+ * otherwise falls back to local JWT signature checks.
+ * 
+ * @param token - The JWT string to verify.
+ * @returns A promise resolving to decoded token payload or null if invalid/expired.
+ */
 export async function verifyToken(token: string) {
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   const isFirebase = !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && projectId);

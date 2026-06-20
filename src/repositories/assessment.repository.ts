@@ -12,6 +12,12 @@ import { CarbonAssessment } from "@/types";
 import { convertFirestoreQuery } from "@/lib/firestore-utils";
 
 export class AssessmentRepository {
+  /**
+   * Retrieves the user's most recent carbon assessment.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @returns A promise resolving to the latest CarbonAssessment or null if none exists.
+   */
   async getLatestAssessment(userId: string): Promise<CarbonAssessment | null> {
     if (isFirebaseConfigured && db) {
       const colRef = collection(db, "assessments");
@@ -30,6 +36,12 @@ export class AssessmentRepository {
     }
   }
 
+  /**
+   * Retrieves the historical list of carbon assessments for a user, sorted ascending by date.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @returns A promise resolving to an array of CarbonAssessments.
+   */
   async getAssessmentsHistory(userId: string): Promise<CarbonAssessment[]> {
     if (isFirebaseConfigured && db) {
       const colRef = collection(db, "assessments");
@@ -47,6 +59,13 @@ export class AssessmentRepository {
     }
   }
 
+  /**
+   * Saves a new carbon footprint assessment record.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @param data - The footprint parameters and calculated category emissions.
+   * @returns A promise resolving to the created CarbonAssessment.
+   */
   async saveAssessment(userId: string, data: Omit<CarbonAssessment, "id" | "userId" | "createdAt">): Promise<CarbonAssessment> {
     if (isFirebaseConfigured && db) {
       const assessmentRef = collection(db, "assessments");
@@ -67,6 +86,12 @@ export class AssessmentRepository {
     }
   }
 
+  /**
+   * Deletes all carbon assessment records for a user.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @returns A promise resolving when the deletion is complete.
+   */
   async deleteAssessments(userId: string): Promise<void> {
     if (isFirebaseConfigured && db) {
       const { writeBatch } = await import("firebase/firestore");

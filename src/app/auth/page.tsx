@@ -86,7 +86,7 @@ function AuthForm() {
           setError(res.error || "Registration failed. Try a different email.");
         }
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setFormLoading(false);
@@ -110,7 +110,7 @@ function AuthForm() {
       } else {
         setError(res.error || "Google Sign-In failed");
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred during Google Sign-In.");
     } finally {
       setFormLoading(false);

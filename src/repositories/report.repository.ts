@@ -14,6 +14,13 @@ import { WeeklyReport } from "@/types";
 import { convertFirestoreDoc, convertFirestoreQuery } from "@/lib/firestore-utils";
 
 export class ReportRepository {
+  /**
+   * Retrieves all weekly reports associated with a specific user.
+   * Sorted descending by creation date.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @returns A promise resolving to an array of WeeklyReports.
+   */
   async getWeeklyReports(userId: string): Promise<WeeklyReport[]> {
     if (isFirebaseConfigured && db) {
       const colRef = collection(db, "weeklyReports");
@@ -31,6 +38,13 @@ export class ReportRepository {
     }
   }
 
+  /**
+   * Retrieves a weekly report by its ID and validates it belongs to the user.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @param reportId - Unique identifier of the report.
+   * @returns A promise resolving to the WeeklyReport or null if not found or unauthorized.
+   */
   async getWeeklyReportById(userId: string, reportId: string): Promise<WeeklyReport | null> {
     if (isFirebaseConfigured && db) {
       const docRef = doc(db, "weeklyReports", reportId);
@@ -51,6 +65,13 @@ export class ReportRepository {
     }
   }
 
+  /**
+   * Saves a weekly evaluation and metrics report for a user.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @param data - The report analytics (carbon reduction, accomplishments, opportunities, next actions, trend).
+   * @returns A promise resolving to the saved WeeklyReport.
+   */
   async saveWeeklyReport(
     userId: string, 
     data: Omit<WeeklyReport, "id" | "userId" | "createdAt">

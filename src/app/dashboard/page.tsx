@@ -55,7 +55,7 @@ export default function DashboardPage() {
     }
   }, [user, loading, router, request]);
 
-  if (loading || fetching || !dashboardData || !user) {
+  if (loading || fetching || !dashboardData || !dashboardData.latestAssessment || !user) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#090d10]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand" />

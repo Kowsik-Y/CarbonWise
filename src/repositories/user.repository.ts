@@ -16,6 +16,13 @@ import { User, Achievement } from "@/types";
 import { convertFirestoreDoc, convertFirestoreQuery } from "@/lib/firestore-utils";
 
 export class UserRepository {
+  /**
+   * Retrieves a user's profile by their ID.
+   * Compiles the profile from Firebase if initialized, otherwise falls back to Prisma.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @returns User profile data or null if not found.
+   */
   async getUserProfile(userId: string): Promise<User | null> {
     if (isFirebaseConfigured && db) {
       const userRef = doc(db, "users", userId);
@@ -37,6 +44,13 @@ export class UserRepository {
     }
   }
 
+  /**
+   * Creates a new user profile record.
+   * 
+   * @param userId - Unique identifier for the user.
+   * @param data - Name and email details.
+   * @returns A promise resolving to the created User object.
+   */
   async createUserProfile(userId: string, data: { name: string; email: string }): Promise<User> {
     if (isFirebaseConfigured && db) {
       const userRef = doc(db, "users", userId);
@@ -72,6 +86,12 @@ export class UserRepository {
     }
   }
 
+  /**
+   * Creates a new local user with credentials.
+   * 
+   * @param data - User credentials including password hash.
+   * @returns The created User object.
+   */
   async createUser(data: { name: string; email: string; passwordHash: string }): Promise<User> {
     const user = await prisma.user.create({
       data: {
@@ -91,6 +111,12 @@ export class UserRepository {
     return user as User;
   }
 
+  /**
+   * Retrieves user profile by email address.
+   * 
+   * @param email - User email address.
+   * @returns User details (including password hash if local user) or null.
+   */
   async getUserByEmail(email: string): Promise<(User & { passwordHash?: string }) | null> {
     if (isFirebaseConfigured && db) {
       const colRef = collection(db, "users");
@@ -105,6 +131,14 @@ export class UserRepository {
     }
   }
 
+  /**
+   * Updates a user's accumulated points and rank level.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @param points - The new points tally.
+   * @param level - The user's new rank level.
+   * @returns The updated points and level details.
+   */
   async updateUserPoints(userId: string, points: number, level: number): Promise<{ points: number; level: number }> {
     if (isFirebaseConfigured && db) {
       const userRef = doc(db, "users", userId);
@@ -120,6 +154,12 @@ export class UserRepository {
     }
   }
 
+  /**
+   * Retrieves unlocked achievements for a user.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @returns A list of Achievements.
+   */
   async getUserAchievements(userId: string): Promise<Achievement[]> {
     if (isFirebaseConfigured && db) {
       const colRef = collection(db, "achievements");
@@ -134,6 +174,16 @@ export class UserRepository {
     }
   }
 
+  /**
+   * Unlocks and saves a new achievement badge for a user.
+   * Prevents duplicates if the achievement is already unlocked.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @param title - Title of the achievement badge.
+   * @param description - Descriptive details of the achievement.
+   * @param icon - SVG or identifier string for the achievement badge icon.
+   * @returns The unlocked Achievement detail.
+   */
   async addAchievement(userId: string, title: string, description: string, icon: string): Promise<Achievement> {
     if (isFirebaseConfigured && db) {
       const colRef = collection(db, "achievements");

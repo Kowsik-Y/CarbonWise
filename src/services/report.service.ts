@@ -7,14 +7,35 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { logger } from "@/lib/logger";
 
 export class ReportService {
+  /**
+   * Retrieves all weekly reports generated for a user.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @returns A list of WeeklyReports.
+   */
   async getWeeklyReports(userId: string): Promise<WeeklyReport[]> {
     return reportRepository.getWeeklyReports(userId);
   }
 
+  /**
+   * Retrieves a weekly report by its ID and validates owner.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @param reportId - Unique identifier of the report.
+   * @returns The WeeklyReport or null.
+   */
   async getWeeklyReportById(userId: string, reportId: string): Promise<WeeklyReport | null> {
     return reportRepository.getWeeklyReportById(userId, reportId);
   }
 
+  /**
+   * Generates a weekly sustainability progress report for a user.
+   * Pulls metrics on assessment trends, completed goals and challenges.
+   * Utilizes Gemini AI model to write copy, falling back to local heuristic text if key is absent.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @returns A promise resolving to the saved WeeklyReport.
+   */
   async generateWeeklyReport(userId: string): Promise<WeeklyReport> {
     // 1. Fetch latest assessment and history
     const latestAssessment = await assessmentRepository.getLatestAssessment(userId);

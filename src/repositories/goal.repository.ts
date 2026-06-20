@@ -15,6 +15,13 @@ import { Goal } from "@/types";
 import { convertFirestoreDoc, convertFirestoreQuery } from "@/lib/firestore-utils";
 
 export class GoalRepository {
+  /**
+   * Retrieves all goals associated with a specific user.
+   * Sorts the goals descending by their creation timestamp.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @returns A promise resolving to an array of Goals.
+   */
   async getUserGoals(userId: string): Promise<Goal[]> {
     if (isFirebaseConfigured && db) {
       const colRef = collection(db, "goals");
@@ -32,6 +39,13 @@ export class GoalRepository {
     }
   }
 
+  /**
+   * Adds a new active carbon-reduction goal for the user.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @param data - The details of the goal.
+   * @returns A promise resolving to the created Goal.
+   */
   async addGoal(userId: string, data: { title: string; category: Goal["category"]; co2Reduction: number; difficulty: Goal["difficulty"] }): Promise<Goal> {
     if (isFirebaseConfigured && db) {
       const colRef = collection(db, "goals");
@@ -57,6 +71,14 @@ export class GoalRepository {
     }
   }
 
+  /**
+   * Updates a user's goal status (e.g., marks it completed).
+   * 
+   * @param userId - Unique identifier of the user.
+   * @param goalId - The identifier of the goal to update.
+   * @param status - The target status.
+   * @returns The updated Goal details or null.
+   */
   async updateGoal(userId: string, goalId: string, status: "ACTIVE" | "COMPLETED"): Promise<Goal | null> {
     if (isFirebaseConfigured && db) {
       const docRef = doc(db, "goals", goalId);

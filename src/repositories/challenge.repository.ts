@@ -15,6 +15,12 @@ import { UserChallenge } from "@/types";
 import { convertFirestoreDoc, convertFirestoreQuery } from "@/lib/firestore-utils";
 
 export class ChallengeRepository {
+  /**
+   * Retrieves all challenges associated with a specific user.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @returns A promise resolving to an array of UserChallenges.
+   */
   async getUserChallenges(userId: string): Promise<UserChallenge[]> {
     if (isFirebaseConfigured && db) {
       const colRef = collection(db, "userChallenges");
@@ -29,6 +35,13 @@ export class ChallengeRepository {
     }
   }
 
+  /**
+   * Registers a user for a specific community or AI challenge.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @param challengeCode - Code identifying the challenge.
+   * @returns A promise resolving to the created UserChallenge.
+   */
   async joinChallenge(userId: string, challengeCode: string): Promise<UserChallenge> {
     if (isFirebaseConfigured && db) {
       const colRef = collection(db, "userChallenges");
@@ -51,6 +64,14 @@ export class ChallengeRepository {
     }
   }
 
+  /**
+   * Marks an active user challenge as completed.
+   * Throws an error if the challenge enrollment is not found or is already completed.
+   * 
+   * @param userId - Unique identifier of the user.
+   * @param enrollmentId - Unique identifier of the user's challenge enrollment.
+   * @returns A promise resolving to the updated UserChallenge.
+   */
   async completeChallenge(userId: string, enrollmentId: string): Promise<UserChallenge> {
     if (isFirebaseConfigured && db) {
       const docRef = doc(db, "userChallenges", enrollmentId);

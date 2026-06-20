@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-context";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { User as UserIcon, Calendar, Award, RotateCcw, ShieldCheck, Mail, Sparkles, Settings } from "lucide-react";
+import { User as UserIcon, Award, RotateCcw, ShieldCheck, Mail, Settings } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
 
 interface Achievement {

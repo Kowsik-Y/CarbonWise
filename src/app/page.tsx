@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-context";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { Leaf, Compass, MessageSquare, Target, Trophy, Sparkles, ArrowRight, BarChart2, Globe, ShieldCheck } from "lucide-react";
+import { Compass, MessageSquare, Target, Trophy, Sparkles, ArrowRight, BarChart2, Globe, ShieldCheck } from "lucide-react";
 
 export default function Home() {
   const { user, loading } = useAuth();
