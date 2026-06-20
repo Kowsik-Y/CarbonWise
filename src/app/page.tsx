@@ -72,7 +72,7 @@ export default function Home() {
         </div>
 
         <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl max-w-4xl mx-auto leading-[1.1]">
-          Track less. <span className="bg-gradient-to-r from-brand-light to-teal-400 bg-clip-text text-transparent">Reduce more.</span>
+          Track less. <span className="bg-linear-to-r from-brand-light to-teal-400 bg-clip-text text-transparent">Reduce more.</span>
         </h1>
 
         <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-400">

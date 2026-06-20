@@ -62,7 +62,7 @@ export const Dialog: React.FC<DialogProps> = ({
     <div
       ref={overlayRef}
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fade-in"
+      className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fade-in"
     >
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d141a]/95 backdrop-blur-xl p-6 shadow-2xl animate-scale-in flex flex-col gap-4 relative overflow-hidden">
         {/* Decorative corner glow */}
