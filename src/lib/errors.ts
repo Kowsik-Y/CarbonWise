@@ -43,6 +43,12 @@ export class ConflictError extends AppError {
   }
 }
 
+export class RateLimitError extends AppError {
+  constructor(message: string = "Too Many Requests") {
+    super(message, 429);
+  }
+}
+
 export function handleApiError(error: unknown) {
   logger.error("API Error encountered", error);
 

@@ -1,9 +1,26 @@
 import { SignJWT, jwtVerify, createRemoteJWKSet } from "jose";
 import { logger } from "@/lib/logger";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "carbonwise_super_secret_key_123456789_at_least_32_chars"
-);
+let secretKey: Uint8Array;
+if (process.env.JWT_SECRET) {
+  secretKey = new TextEncoder().encode(process.env.JWT_SECRET);
+} else {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET environment variable is required in production");
+  } else {
+    const randomBuffer = new Uint8Array(32);
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+      crypto.getRandomValues(randomBuffer);
+    } else {
+      for (let i = 0; i < 32; i++) {
+        randomBuffer[i] = Math.floor(Math.random() * 256);
+      }
+    }
+    secretKey = randomBuffer;
+    logger.warn("JWT_SECRET environment variable is not set. A random secret key has been generated for this session. Session tokens will not persist across restarts.");
+  }
+}
+const JWT_SECRET = secretKey;
 
 const FIREBASE_JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 

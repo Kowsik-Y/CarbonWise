@@ -5,6 +5,7 @@ import { axe, toHaveNoViolations } from "jest-axe";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Dialog } from "@/components/ui/dialog";
 
 // Extend expect with toHaveNoViolations from jest-axe
 expect.extend(toHaveNoViolations);
@@ -69,5 +70,40 @@ describe("Component Accessibility Audits (Axe-Core)", () => {
     const button = container.querySelector("button");
     expect(button?.getAttribute("aria-haspopup")).toBe("listbox");
     expect(button?.getAttribute("aria-controls")).toBe("diet-select-listbox");
+  });
+
+  it("Dialog: should contain ARIA dialog attributes and role markup when open", () => {
+    const { getByRole, getByLabelText, getByText } = render(
+      <Dialog
+        isOpen={true}
+        onClose={() => {}}
+        title="Test Title"
+        description="Test Description"
+        confirmText="Confirm"
+        cancelText="Cancel"
+      />
+    );
+
+    // Verify role="dialog" is present
+    const dialog = getByRole("dialog");
+    expect(dialog).toBeDefined();
+
+    // Verify aria-modal="true" is present
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+
+    // Verify aria-labelledby and aria-describedby points to title and description
+    expect(dialog.getAttribute("aria-labelledby")).toBe("dialog-title");
+    expect(dialog.getAttribute("aria-describedby")).toBe("dialog-description");
+
+    // Verify title and description elements have correct IDs and contents
+    const titleEl = getByText("Test Title");
+    expect(titleEl.getAttribute("id")).toBe("dialog-title");
+
+    const descEl = getByText("Test Description");
+    expect(descEl.getAttribute("id")).toBe("dialog-description");
+
+    // Verify aria-label="Close" is present on the close button
+    const closeBtn = getByLabelText("Close");
+    expect(closeBtn).toBeDefined();
   });
 });

@@ -5,7 +5,7 @@ import { signToken, verifyToken } from "@/services/auth";
 import { getUserProfile, createUserProfile } from "@/services/db-service";
 import { cookies } from "next/headers";
 import { z } from "zod";
-import { handleApiError, ValidationError, UnauthorizedError } from "@/lib/errors";
+import { handleApiError, ValidationError, UnauthorizedError, RateLimitError } from "@/lib/errors";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address").optional(),
@@ -13,8 +13,34 @@ const loginSchema = z.object({
   idToken: z.string().optional(),
 });
 
+// sliding window rate limiter
+const failedAttemptsMap = new Map<string, number[]>();
+
+function isRateLimited(key: string): boolean {
+  const now = Date.now();
+  const fifteenMinutesAgo = now - 15 * 60 * 1000;
+  
+  let attempts = failedAttemptsMap.get(key) || [];
+  attempts = attempts.filter((t) => t > fifteenMinutesAgo);
+  failedAttemptsMap.set(key, attempts);
+  
+  return attempts.length >= 5;
+}
+
+function recordFailedAttempt(key: string) {
+  const now = Date.now();
+  const attempts = failedAttemptsMap.get(key) || [];
+  attempts.push(now);
+  failedAttemptsMap.set(key, attempts);
+}
+
 export async function POST(req: NextRequest) {
   try {
+    if (process.env.NODE_ENV === "test" && req.headers.get("x-reset-rate-limit")) {
+      failedAttemptsMap.clear();
+      return NextResponse.json({ ok: true });
+    }
+
     const body = await req.json();
     const result = loginSchema.safeParse(body);
 
@@ -62,10 +88,18 @@ export async function POST(req: NextRequest) {
       throw new ValidationError("Email and password are required");
     }
 
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("x-real-ip") || "127.0.0.1";
+
+    if (isRateLimited(email) || isRateLimited(ip)) {
+      throw new RateLimitError("Too many failed login attempts. Please try again later.");
+    }
+
     // Find user
     const user = await userRepository.getUserByEmail(email);
 
     if (!user) {
+      recordFailedAttempt(ip);
+      recordFailedAttempt(email);
       throw new UnauthorizedError("Invalid email or password");
     }
 
@@ -73,8 +107,14 @@ export async function POST(req: NextRequest) {
     const isPasswordValid = user.passwordHash ? await bcrypt.compare(password, user.passwordHash) : false;
 
     if (!isPasswordValid) {
+      recordFailedAttempt(ip);
+      recordFailedAttempt(email);
       throw new UnauthorizedError("Invalid email or password");
     }
+
+    // Clear attempts on success
+    failedAttemptsMap.delete(ip);
+    failedAttemptsMap.delete(email);
 
     // Generate JWT token
     const token = await signToken({ userId: user.id, email: user.email });

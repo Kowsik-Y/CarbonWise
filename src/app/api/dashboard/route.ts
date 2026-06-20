@@ -21,25 +21,32 @@ export const GET = withAuth(async (req: NextRequest, { userId }) => {
       throw new NotFoundError("User not found");
     }
 
-    // 2. Fetch latest assessment
-    const latestAssessment = await getLatestAssessment(userId);
+    // 2-6. Fetch independent data concurrently
+    const [
+      latestAssessment,
+      history,
+      goalsList,
+      challengesList,
+      achievements,
+    ] = await Promise.all([
+      getLatestAssessment(userId),
+      getAssessmentsHistory(userId),
+      getUserGoals(userId),
+      getUserChallenges(userId),
+      getUserAchievements(userId),
+    ]);
 
-    // 3. Fetch assessment history
-    const history = await getAssessmentsHistory(userId);
     const assessmentsHistory = history.slice(-6); // Take up to 6 records for line charts
 
     // 4. Fetch goals stats
-    const goalsList = await getUserGoals(userId);
     const activeGoals = goalsList.filter((g: Goal) => g.status === "ACTIVE");
     const completedGoalsCount = goalsList.filter((g: Goal) => g.status === "COMPLETED").length;
 
     // 5. Fetch challenges stats
-    const challengesList = await getUserChallenges(userId);
     const joinedChallenges = challengesList.filter((uc: UserChallenge) => uc.status === "JOINED");
     const completedChallengesCount = challengesList.filter((uc: UserChallenge) => uc.status === "COMPLETED").length;
 
     // 6. Fetch achievements
-    const achievements = await getUserAchievements(userId);
     achievements.sort((a: Achievement, b: Achievement) => new Date(b.unlockedAt).getTime() - new Date(a.unlockedAt).getTime());
 
     return NextResponse.json({

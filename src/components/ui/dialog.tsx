@@ -24,6 +24,8 @@ export const Dialog: React.FC<DialogProps> = ({
   variant = "info",
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Close on Escape key
   useEffect(() => {
@@ -35,6 +37,22 @@ export const Dialog: React.FC<DialogProps> = ({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
+
+  // Focus management
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+      if (containerRef.current) {
+        containerRef.current.focus();
+      }
+    }
+    return () => {
+      if (previousFocusRef.current) {
+        previousFocusRef.current.focus();
+        previousFocusRef.current = null;
+      }
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -64,7 +82,15 @@ export const Dialog: React.FC<DialogProps> = ({
       onClick={handleBackdropClick}
       className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fade-in"
     >
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d141a]/95 backdrop-blur-xl p-6 shadow-2xl animate-scale-in flex flex-col gap-4 relative overflow-hidden">
+      <div
+        ref={containerRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dialog-title"
+        aria-describedby="dialog-description"
+        className="outline-none w-full max-w-md rounded-2xl border border-white/10 bg-[#0d141a]/95 backdrop-blur-xl p-6 shadow-2xl animate-scale-in flex flex-col gap-4 relative overflow-hidden"
+      >
         {/* Decorative corner glow */}
         <div className="absolute -top-12 -right-12 w-24 h-24 bg-brand/10 rounded-full blur-xl pointer-events-none" />
 
@@ -74,11 +100,12 @@ export const Dialog: React.FC<DialogProps> = ({
             {getIcon()}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-base font-bold text-white leading-6 truncate">{title}</h3>
-            <p className="text-xs text-gray-400 mt-2 leading-relaxed whitespace-pre-wrap">{description}</p>
+            <h3 id="dialog-title" className="text-base font-bold text-white leading-6 truncate">{title}</h3>
+            <p id="dialog-description" className="text-xs text-gray-400 mt-2 leading-relaxed whitespace-pre-wrap">{description}</p>
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="rounded-lg p-1 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all cursor-pointer"
           >
             <X className="h-4.5 w-4.5" />

@@ -7,6 +7,7 @@ import { GET as getAssessment, POST as postAssessment, DELETE as deleteAssessmen
 import { GET as getDashboard } from "@/app/api/dashboard/route";
 import { POST as postChat } from "@/app/api/chat/route";
 import { POST as postParseAssessment } from "@/app/api/carbon/parse-assessment/route";
+import { POST as postLogin } from "@/app/api/auth/login/route";
 import { goalRepository } from "@/repositories/goal.repository";
 import { challengeRepository } from "@/repositories/challenge.repository";
 import { assessmentRepository } from "@/repositories/assessment.repository";
@@ -27,6 +28,7 @@ vi.mock("@/repositories/user.repository", () => {
       updateUserPoints: vi.fn(),
       getUserAchievements: vi.fn(),
       addAchievement: vi.fn(),
+      getUserByEmail: vi.fn(),
     },
   };
 });
@@ -875,6 +877,47 @@ describe("API Route Integration Tests", () => {
       });
       const res = await postParseAssessment(req);
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe("/api/auth/login Route", () => {
+    it("POST: should rate limit after 5 failed login attempts", async () => {
+      // First, reset the rate limiter map
+      const resetReq = new NextRequest("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: { "x-reset-rate-limit": "true" },
+      });
+      await postLogin(resetReq);
+
+      vi.mocked(userRepository.getUserByEmail).mockResolvedValue(null);
+
+      const email = `nonexistent-${Date.now()}@carbonwise.com`;
+      const payload = {
+        email,
+        password: "wrongpassword",
+      };
+
+      // 5 failed login attempts
+      for (let i = 0; i < 5; i++) {
+        const req = new NextRequest("http://localhost/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const res = await postLogin(req);
+        expect(res.status).toBe(401);
+      }
+
+      // The 6th attempt should return 429 RateLimitError
+      const limitReq = new NextRequest("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const res = await postLogin(limitReq);
+      expect(res.status).toBe(429);
+      const data = await res.json();
+      expect(data.error).toContain("Too many failed login attempts");
     });
   });
 });

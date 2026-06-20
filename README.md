@@ -243,7 +243,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Yes | Firebase messaging sender ID |
 | `NEXT_PUBLIC_FIREBASE_APP_ID` | Yes | Firebase app ID |
 | `NEXT_PUBLIC_APP_URL` | No | Production base URL for SEO/OG image links |
-| `JWT_SECRET` | No | HS256 JWT secret for fallback (non-Firebase) auth mode |
+| `JWT_SECRET` | Required in production | HS256 JWT secret for fallback (non-Firebase) auth mode |
 | `DATABASE_URL` | No | SQLite URL for Prisma fallback mode |
 
 ---
