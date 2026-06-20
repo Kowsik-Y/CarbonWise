@@ -95,13 +95,15 @@ src/
 │   ├── layout.tsx              # Root layout, SEO metadata, AuthProvider, skip-to-content
 │   └── manifest.ts             # PWA manifest
 ├── components/
-│   └── ui/                     # Button · GlassCard · Navigation · Dialog · Input · Select
+│   └── ui/                     # Button · GlassCard · Navigation · Dialog · Input · Select · PageLoader
 ├── features/
 │   └── auth/                   # AuthContext (Firebase + local custom cookie handler)
 ├── lib/
 │   ├── db.ts                   # Prisma Client singleton (fallback)
-│   ├── errors.ts               # Centralized exception types (AppError, ValidationError)
+│   ├── errors.ts               # Centralized exception types (AppError, ValidationError, RateLimitError)
 │   ├── firebase.ts             # Firebase App/Auth/Firestore init
+│   ├── firestore-utils.ts      # Unified firestore snapshot conversion & timestamp parsing
+│   ├── logger.ts               # Structured diagnostics logger
 │   └── proxy.ts                # Route handler proxy and JWT verification helper
 ├── repositories/               # Repository Layer (SOLID Data Access Isolation)
 │   ├── user.repository.ts      # User profile, points, levels, and achievements
@@ -110,8 +112,9 @@ src/
 │   ├── challenge.repository.ts # Weekly challenges enrollments
 │   └── report.repository.ts    # Weekly AI reports storage
 ├── services/
-│   ├── ai-coach.ts             # Gemini coach engine + local heuristic fallback
-│   ├── auth.ts                 # JWT sign/verify (HS256 + Firebase JWKS)
+│   ├── ai/                     # Modular AI sub-services (Goal, challenges, chat, report, parse)
+│   ├── ai-coach.ts             # Barrel exports and legacy imports proxy for AI services
+│   ├── auth.ts                 # JWT sign/verify (HS256 + Firebase JWKS with fail-fast check)
 │   ├── db-service.ts           # Service coordinator delegating data to repositories
 │   └── report.service.ts       # AI weekly report generator, comparison calculation
 ├── tests/                      # Comprehensive Test Suite (Vitest & Playwright E2E)
@@ -121,6 +124,7 @@ src/
 │   ├── ai-coach.test.ts        # AI coach response logic unit tests
 │   ├── auth.test.ts            # Authentication proxy helpers and token tests
 │   ├── carbon-calculator.test.ts # Carbon emissions math unit tests
+│   ├── firestore-logger.test.ts# Unit tests for firestore-utils and logger
 │   ├── integration.test.ts     # Route/API endpoints integration tests
 │   ├── repositories.test.ts    # SQLite repositories integration tests
 │   ├── repositories-firebase.test.ts # Firebase Firestore repository tests
