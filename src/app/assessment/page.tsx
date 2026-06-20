@@ -7,9 +7,10 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Compass, Car, Flame, FlameKindling, ShoppingBag, Trash2, ChevronRight, ChevronLeft, Award, Sparkles } from "lucide-react";
+import { Compass, Car, Flame, FlameKindling, ShoppingBag, Trash2, ChevronRight, ChevronLeft, Award } from "lucide-react";
 import { useApi } from "@/hooks/use-api";
 import { AssessmentInput } from "@/types";
+import { AiAutocompleteForm } from "@/features/carbon/ai-autocomplete-form";
 
 export default function AssessmentPage() {
   const { user, refreshSession, loading, showToast } = useAuth();
@@ -153,38 +154,12 @@ export default function AssessmentPage() {
       )}
 
       {step < 5 && (
-        <GlassCard className="w-full mb-6 p-4 border-brand/20 bg-brand/5">
-          <div className="flex gap-2 items-center text-brand font-semibold text-xs uppercase tracking-wider mb-2">
-            <Sparkles className="h-4 w-4" />
-            <span>AI Quick Assessment Autocomplete</span>
-          </div>
-          <p className="text-xs text-gray-400 mb-3 leading-normal">
-            Describe your lifestyle in a sentence or two (e.g. "I commute 30km in a petrol car, have average meat-eating diet, recycle sometimes..."), and AI will auto-configure the assessment details below!
-          </p>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleAiParse();
-            }}
-            className="flex gap-2 w-full"
-          >
-            <input
-              type="text"
-              placeholder="e.g. I drive 40km in an EV, have a $150 electricity bill, eat vegetarian, and recycle"
-              value={aiPrompt}
-              onChange={(e) => setAiPrompt(e.target.value)}
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand text-white"
-            />
-            <Button
-              type="submit"
-              isLoading={parsing}
-              size="sm"
-              className="bg-brand text-background hover:bg-brand-light font-bold"
-            >
-              Parse & Fill
-            </Button>
-          </form>
-        </GlassCard>
+        <AiAutocompleteForm
+          prompt={aiPrompt}
+          onChange={setAiPrompt}
+          onSubmit={handleAiParse}
+          loading={parsing}
+        />
       )}
 
       {/* Step 1: Transport */}

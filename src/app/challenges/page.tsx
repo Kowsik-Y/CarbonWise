@@ -3,11 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-context";
-import { GlassCard } from "@/components/ui/glass-card";
-import { Button } from "@/components/ui/button";
-import { Trophy, Zap, Check, Plus, Sparkles } from "lucide-react";
+import { Trophy, Zap, Check } from "lucide-react";
 import { Challenge } from "@/types";
 import { useApi } from "@/hooks/use-api";
+import { ChallengeCard } from "@/features/challenges/challenge-card";
 
 interface UserChallenge {
   id: string;
@@ -143,7 +142,6 @@ export default function ChallengesPage() {
         </div>
       </div>
 
-      {/* Grid: Challenges Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {challenges.map((challenge) => {
           // Determine status
@@ -152,65 +150,16 @@ export default function ChallengesPage() {
           const isCompleted = enrollment?.status === "COMPLETED";
 
           return (
-            <GlassCard
+            <ChallengeCard
               key={challenge.code}
-              premium={isJoined}
-              className={`flex flex-col justify-between min-h-[220px] transition-all duration-300 ${
-                isCompleted ? "opacity-60 border-white/5" : "border-white/10"
-              }`}
-            >
-              <div>
-                <div className="flex justify-between items-center text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
-                  <span className="capitalize">{challenge.category}</span>
-                  <div className="flex items-center gap-1.5">
-                    {challenge.code.startsWith("ai-") && (
-                      <span className="flex items-center gap-0.5 text-brand font-bold uppercase tracking-wider bg-brand/10 border border-brand/20 rounded px-1.5 py-0.5 text-[9px]">
-                        <Sparkles className="h-2.5 w-2.5 animate-pulse" /> AI Recommended
-                      </span>
-                    )}
-                    <span className="capitalize text-[10px] text-gray-400 font-bold bg-white/5 px-1.5 py-0.5 rounded border border-white/5">{challenge.difficulty} • {challenge.duration}</span>
-                  </div>
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                  {challenge.title}
-                  {isCompleted && <Check className="h-4 w-4 text-brand" />}
-                </h3>
-                <p className="text-sm text-gray-400 leading-relaxed">
-                  {challenge.description}
-                </p>
-              </div>
-
-              <div className="flex justify-between items-center pt-4 border-t border-white/5 mt-4">
-                <span className="text-sm font-extrabold text-brand-light">
-                  +{challenge.points} XP Points
-                </span>
-
-                {isCompleted ? (
-                  <span className="text-xs text-brand font-semibold uppercase tracking-wider bg-brand/10 rounded-lg px-2.5 py-1 border border-brand/20">
-                    Completed
-                  </span>
-                ) : isJoined ? (
-                  <Button
-                    size="sm"
-                    disabled={processingCode === enrollment?.id}
-                    onClick={() => handleCompleteChallenge(enrollment!.id, challenge.title)}
-                    className="bg-brand text-background hover:bg-brand-light font-bold text-sm"
-                  >
-                    I Did This!
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={processingCode === challenge.code}
-                    onClick={() => handleJoinChallenge(challenge.code)}
-                    className="border-white/10 hover:border-brand/35 text-sm flex gap-1 items-center"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Join Challenge
-                  </Button>
-                )}
-              </div>
-            </GlassCard>
+              challenge={challenge}
+              isJoined={isJoined}
+              isCompleted={isCompleted}
+              processing={processingCode === challenge.code || processingCode === enrollment?.id}
+              onJoin={handleJoinChallenge}
+              onComplete={handleCompleteChallenge}
+              enrollmentId={enrollment?.id}
+            />
           );
         })}
       </div>

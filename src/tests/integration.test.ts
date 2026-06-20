@@ -1,4 +1,4 @@
-/* eslint-disable */
+
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { GET as getGoals, POST as postGoal, PATCH as patchGoal } from "@/app/api/goals/route";
@@ -478,7 +478,7 @@ describe("API Route Integration Tests", () => {
       const req = createAuthedRequest("http://localhost/api/challenges", "PATCH", { id: "enroll-1" });
       const res = await patchChallenge(req);
       expect(res.status).toBe(200);
-      
+
       const data = await res.json();
       expect(data.pointsAwarded).toBe(80);
       expect(userRepository.updateUserPoints).toHaveBeenCalledWith("test-user-123", 130, 1);
@@ -765,7 +765,7 @@ describe("API Route Integration Tests", () => {
     it("GET: should return full profile stats", async () => {
       const mockUser = { id: "u1", name: "User", points: 100, level: 1 };
       const mockAss = { id: "ass1", carbonScore: 75, annualFootprint: 5000, transportEmissions: 1000, energyEmissions: 1000, foodEmissions: 1000, shoppingEmissions: 1000, wasteEmissions: 1000, monthlyFootprint: 416 };
-      
+
       vi.mocked(userRepository.getUserProfile).mockResolvedValue(mockUser as any);
       vi.mocked(assessmentRepository.getLatestAssessment).mockResolvedValue(mockAss as any);
       vi.mocked(assessmentRepository.getAssessmentsHistory).mockResolvedValue([mockAss] as any);
