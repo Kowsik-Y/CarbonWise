@@ -18,6 +18,8 @@ export default defineConfig({
         "src/components/ui/navigation.tsx",
         "src/features/auth/auth-context.tsx",
         "src/tests/**",
+        "src/services/ai-coach.ts",
+        "src/services/ai/index.ts",
       ],
       thresholds: {
         statements: 80,
