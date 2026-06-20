@@ -3,7 +3,6 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import { signToken, verifyToken } from "@/services/auth";
 import { withAuth } from "@/lib/proxy";
 import { NextRequest, NextResponse } from "next/server";
-import * as jose from "jose";
 
 // Mock jose globally to support mocking jwtVerify in ESM
 vi.mock("jose", async (importOriginal) => {

@@ -10,6 +10,7 @@ import { goalRepository } from "@/repositories/goal.repository";
 import { challengeRepository } from "@/repositories/challenge.repository";
 import { assessmentRepository } from "@/repositories/assessment.repository";
 import { userRepository } from "@/repositories/user.repository";
+import { User, CarbonAssessment, Goal, UserChallenge } from "@/types";
 
 // Mock Firebase config
 vi.mock("@/lib/firebase", () => ({
@@ -94,10 +95,10 @@ describe("API Route Integration Tests", () => {
     vi.mocked(challengeRepository.completeChallenge).mockReset();
 
     vi.mocked(assessmentRepository.getLatestAssessment).mockResolvedValue(null);
-    vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "test-user-123", points: 100, level: 1 } as any);
+    vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "test-user-123", points: 100, level: 1 } as unknown as User);
   });
 
-  const createAuthedRequest = (url: string, method: string, body?: any, headers: Record<string, string> = {}) => {
+  const createAuthedRequest = (url: string, method: string, body?: unknown, headers: Record<string, string> = {}) => {
     return new NextRequest(url, {
       method,
       headers: {
@@ -127,7 +128,7 @@ describe("API Route Integration Tests", () => {
   describe("/api/goals Routes", () => {
     it("GET: should return user goals list", async () => {
       const mockGoals = [{ id: "g1", title: "Test Goal", status: "ACTIVE" }];
-      vi.mocked(goalRepository.getUserGoals).mockResolvedValue(mockGoals as any);
+      vi.mocked(goalRepository.getUserGoals).mockResolvedValue(mockGoals as unknown as Goal[]);
 
       const req = createAuthedRequest("http://localhost/api/goals", "GET");
       const res = await getGoals(req);
@@ -158,7 +159,7 @@ describe("API Route Integration Tests", () => {
 
     it("POST: should fail if active goals limit (10) is exceeded", async () => {
       const activeGoals = Array(10).fill({ id: "g", status: "ACTIVE" });
-      vi.mocked(goalRepository.getUserGoals).mockResolvedValue(activeGoals as any);
+      vi.mocked(goalRepository.getUserGoals).mockResolvedValue(activeGoals as unknown as Goal[]);
 
       const req = createAuthedRequest("http://localhost/api/goals", "POST", {
         title: "Another Goal",
@@ -175,7 +176,7 @@ describe("API Route Integration Tests", () => {
     it("POST: should add a valid goal successfully", async () => {
       const mockGoal = { id: "g1", title: "Eat Veggies", category: "food", co2Reduction: 100, difficulty: "easy", status: "ACTIVE" };
       vi.mocked(goalRepository.getUserGoals).mockResolvedValue([]);
-      vi.mocked(goalRepository.addGoal).mockResolvedValue(mockGoal as any);
+      vi.mocked(goalRepository.addGoal).mockResolvedValue(mockGoal as unknown as Goal);
 
       const req = createAuthedRequest("http://localhost/api/goals", "POST", {
         title: "Eat Veggies",
@@ -223,7 +224,7 @@ describe("API Route Integration Tests", () => {
 
     it("PATCH: should return 400 if goal is already completed", async () => {
       const mockGoal = { id: "g1", status: "COMPLETED" };
-      vi.mocked(goalRepository.getUserGoals).mockResolvedValue([mockGoal] as any);
+      vi.mocked(goalRepository.getUserGoals).mockResolvedValue([mockGoal] as unknown as Goal[]);
 
       const req = createAuthedRequest("http://localhost/api/goals", "PATCH", {
         id: "g1",
@@ -238,11 +239,11 @@ describe("API Route Integration Tests", () => {
     it("PATCH: should complete active goal, award XP points and unlock achievements", async () => {
       const mockGoal = { id: "g1", status: "ACTIVE", difficulty: "hard", category: "energy", co2Reduction: 200 };
       vi.mocked(goalRepository.getUserGoals)
-        .mockResolvedValueOnce([mockGoal] as any)
-        .mockResolvedValueOnce([{ ...mockGoal, status: "COMPLETED" }] as any);
+        .mockResolvedValueOnce([mockGoal] as unknown as Goal[])
+        .mockResolvedValueOnce([{ ...mockGoal, status: "COMPLETED" }] as unknown as Goal[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 100, level: 1 } as any);
-      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "COMPLETED" } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 100, level: 1 } as unknown as User);
+      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "COMPLETED" } as unknown as Goal);
 
       const req = createAuthedRequest("http://localhost/api/goals", "PATCH", {
         id: "g1",
@@ -259,11 +260,11 @@ describe("API Route Integration Tests", () => {
     it("PATCH: should unlock Eco Warrior achievement if 5 goals are completed", async () => {
       const mockGoal = { id: "g1", status: "ACTIVE", difficulty: "easy", category: "food", co2Reduction: 50 };
       vi.mocked(goalRepository.getUserGoals)
-        .mockResolvedValueOnce([mockGoal] as any)
-        .mockResolvedValueOnce(Array(5).fill({ status: "COMPLETED" }) as any);
+        .mockResolvedValueOnce([mockGoal] as unknown as Goal[])
+        .mockResolvedValueOnce(Array(5).fill({ status: "COMPLETED" }) as unknown as Goal[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 100, level: 1 } as any);
-      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "COMPLETED" } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 100, level: 1 } as unknown as User);
+      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "COMPLETED" } as unknown as Goal);
 
       const req = createAuthedRequest("http://localhost/api/goals", "PATCH", {
         id: "g1",
@@ -276,8 +277,8 @@ describe("API Route Integration Tests", () => {
 
     it("PATCH: should handle non-completed status update (e.g. updating to ACTIVE again or other status)", async () => {
       const mockGoal = { id: "g1", status: "COMPLETED", difficulty: "hard" };
-      vi.mocked(goalRepository.getUserGoals).mockResolvedValue([mockGoal] as any);
-      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "ACTIVE" } as any);
+      vi.mocked(goalRepository.getUserGoals).mockResolvedValue([mockGoal] as unknown as Goal[]);
+      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "ACTIVE" } as unknown as Goal);
 
       const req = createAuthedRequest("http://localhost/api/goals", "PATCH", {
         id: "g1",
@@ -293,11 +294,11 @@ describe("API Route Integration Tests", () => {
     it("PATCH: should award 100 points for medium difficulty goals and promote level to 3", async () => {
       const mockGoal = { id: "g1", status: "ACTIVE", difficulty: "medium" };
       vi.mocked(goalRepository.getUserGoals)
-        .mockResolvedValueOnce([mockGoal] as any)
-        .mockResolvedValueOnce([{ ...mockGoal, status: "COMPLETED" }] as any);
+        .mockResolvedValueOnce([mockGoal] as unknown as Goal[])
+        .mockResolvedValueOnce([{ ...mockGoal, status: "COMPLETED" }] as unknown as Goal[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 400, level: 2 } as any);
-      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "COMPLETED" } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 400, level: 2 } as unknown as User);
+      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "COMPLETED" } as unknown as Goal);
 
       const req = createAuthedRequest("http://localhost/api/goals", "PATCH", {
         id: "g1",
@@ -313,11 +314,11 @@ describe("API Route Integration Tests", () => {
     it("PATCH: should award 50 points for easy difficulty goals and promote level to 4", async () => {
       const mockGoal = { id: "g1", status: "ACTIVE", difficulty: "easy" };
       vi.mocked(goalRepository.getUserGoals)
-        .mockResolvedValueOnce([mockGoal] as any)
-        .mockResolvedValueOnce([{ ...mockGoal, status: "COMPLETED" }] as any);
+        .mockResolvedValueOnce([mockGoal] as unknown as Goal[])
+        .mockResolvedValueOnce([{ ...mockGoal, status: "COMPLETED" }] as unknown as Goal[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 950, level: 3 } as any);
-      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "COMPLETED" } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 950, level: 3 } as unknown as User);
+      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "COMPLETED" } as unknown as Goal);
 
       const req = createAuthedRequest("http://localhost/api/goals", "PATCH", {
         id: "g1",
@@ -333,11 +334,11 @@ describe("API Route Integration Tests", () => {
     it("PATCH: should handle goal completion when user profile is null", async () => {
       const mockGoal = { id: "g1", status: "ACTIVE", difficulty: "hard" };
       vi.mocked(goalRepository.getUserGoals)
-        .mockResolvedValueOnce([mockGoal] as any)
-        .mockResolvedValueOnce([{ ...mockGoal, status: "COMPLETED" }] as any);
+        .mockResolvedValueOnce([mockGoal] as unknown as Goal[])
+        .mockResolvedValueOnce([{ ...mockGoal, status: "COMPLETED" }] as unknown as Goal[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue(null as any);
-      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "COMPLETED" } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue(null as unknown as User);
+      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "COMPLETED" } as unknown as Goal);
 
       const req = createAuthedRequest("http://localhost/api/goals", "PATCH", {
         id: "g1",
@@ -351,14 +352,14 @@ describe("API Route Integration Tests", () => {
     it("PATCH: should not award achievements when goals completed count is not 1 or 5 (e.g. 2)", async () => {
       const mockGoal = { id: "g1", status: "ACTIVE", difficulty: "hard" };
       vi.mocked(goalRepository.getUserGoals)
-        .mockResolvedValueOnce([mockGoal] as any)
+        .mockResolvedValueOnce([mockGoal] as unknown as Goal[])
         .mockResolvedValueOnce([
           { id: "g1", status: "COMPLETED" },
           { id: "g2", status: "COMPLETED" },
-        ] as any);
+        ] as unknown as Goal[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 100, level: 1 } as any);
-      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "COMPLETED" } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 100, level: 1 } as unknown as User);
+      vi.mocked(goalRepository.updateGoal).mockResolvedValue({ ...mockGoal, status: "COMPLETED" } as unknown as Goal);
 
       const req = createAuthedRequest("http://localhost/api/goals", "PATCH", {
         id: "g1",
@@ -371,7 +372,7 @@ describe("API Route Integration Tests", () => {
 
     it("PATCH: should return 500 when repository throws on update", async () => {
       const mockGoal = { id: "g1", status: "ACTIVE", difficulty: "hard" };
-      vi.mocked(goalRepository.getUserGoals).mockResolvedValue([mockGoal] as any);
+      vi.mocked(goalRepository.getUserGoals).mockResolvedValue([mockGoal] as unknown as Goal[]);
       vi.mocked(goalRepository.updateGoal).mockRejectedValue(new Error("Goal update failed"));
       const req = createAuthedRequest("http://localhost/api/goals", "PATCH", {
         id: "g1",
@@ -385,14 +386,14 @@ describe("API Route Integration Tests", () => {
   describe("/api/challenges Routes", () => {
     it("GET: should fetch combined weekly and dynamic challenges catalog", async () => {
       vi.mocked(challengeRepository.getUserChallenges).mockResolvedValue([]);
-      vi.mocked(assessmentRepository.getLatestAssessment).mockResolvedValue({ id: "ass1" } as any);
+      vi.mocked(assessmentRepository.getLatestAssessment).mockResolvedValue({ id: "ass1" } as unknown as CarbonAssessment);
 
       const req = createAuthedRequest("http://localhost/api/challenges", "GET");
       const res = await getChallenges(req);
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.challenges).toBeDefined();
-      expect(data.challenges.some((c: any) => c.code === "ai-commute")).toBe(true);
+      expect(data.challenges.some((c: { code: string }) => c.code === "ai-commute")).toBe(true);
       expect(data.userChallenges).toEqual([]);
     });
 
@@ -417,7 +418,7 @@ describe("API Route Integration Tests", () => {
 
     it("POST: should successfully join valid challenge", async () => {
       const mockEnrollment = { id: "enroll-1", challengeCode: "no-car-tuesday", status: "JOINED" };
-      vi.mocked(challengeRepository.joinChallenge).mockResolvedValue(mockEnrollment as any);
+      vi.mocked(challengeRepository.joinChallenge).mockResolvedValue(mockEnrollment as unknown as UserChallenge as UserChallenge);
 
       const req = createAuthedRequest("http://localhost/api/challenges", "POST", { challengeCode: "no-car-tuesday" });
       const res = await postChallenge(req);
@@ -457,7 +458,7 @@ describe("API Route Integration Tests", () => {
 
     it("PATCH: should return 404 if challenge catalog entry is missing on complete", async () => {
       const mockEnrollment = { id: "enroll-1", challengeCode: "invalid-code-not-in-catalog", status: "JOINED" };
-      vi.mocked(challengeRepository.getUserChallenges).mockResolvedValue([mockEnrollment] as any);
+      vi.mocked(challengeRepository.getUserChallenges).mockResolvedValue([mockEnrollment] as unknown as UserChallenge[]);
 
       const req = createAuthedRequest("http://localhost/api/challenges", "PATCH", { id: "enroll-1" });
       const res = await patchChallenge(req);
@@ -469,11 +470,11 @@ describe("API Route Integration Tests", () => {
     it("PATCH: should successfully complete challenge, award points and achievements", async () => {
       const mockEnrollment = { id: "enroll-1", challengeCode: "no-car-tuesday", status: "JOINED" };
       vi.mocked(challengeRepository.getUserChallenges)
-        .mockResolvedValueOnce([mockEnrollment] as any)
-        .mockResolvedValueOnce([{ ...mockEnrollment, status: "COMPLETED" }] as any);
+        .mockResolvedValueOnce([mockEnrollment] as unknown as UserChallenge[])
+        .mockResolvedValueOnce([{ ...mockEnrollment, status: "COMPLETED" }] as unknown as UserChallenge[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 50, level: 1 } as any);
-      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 50, level: 1 } as unknown as User);
+      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as unknown as UserChallenge);
 
       const req = createAuthedRequest("http://localhost/api/challenges", "PATCH", { id: "enroll-1" });
       const res = await patchChallenge(req);
@@ -488,15 +489,15 @@ describe("API Route Integration Tests", () => {
     it("PATCH: should unlock Eco Champion achievement if 3 challenges are completed", async () => {
       const mockEnrollment = { id: "enroll-1", challengeCode: "no-car-tuesday", status: "JOINED" };
       vi.mocked(challengeRepository.getUserChallenges)
-        .mockResolvedValueOnce([mockEnrollment] as any)
+        .mockResolvedValueOnce([mockEnrollment] as unknown as UserChallenge[])
         .mockResolvedValueOnce([
           { ...mockEnrollment, status: "COMPLETED" },
           { id: "e2", challengeCode: "plant-based-weekend", status: "COMPLETED" },
           { id: "e3", challengeCode: "energy-saver-week", status: "COMPLETED" }
-        ] as any);
+        ] as unknown as UserChallenge[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 200, level: 2 } as any);
-      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 200, level: 2 } as unknown as User);
+      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as unknown as UserChallenge);
 
       const req = createAuthedRequest("http://localhost/api/challenges", "PATCH", { id: "enroll-1" });
       const res = await patchChallenge(req);
@@ -507,11 +508,11 @@ describe("API Route Integration Tests", () => {
     it("PATCH: should handle challenges completion when user profile is null", async () => {
       const mockEnrollment = { id: "enroll-1", challengeCode: "no-car-tuesday", status: "JOINED" };
       vi.mocked(challengeRepository.getUserChallenges)
-        .mockResolvedValueOnce([mockEnrollment] as any)
-        .mockResolvedValueOnce([{ ...mockEnrollment, status: "COMPLETED" }] as any);
+        .mockResolvedValueOnce([mockEnrollment] as unknown as UserChallenge[])
+        .mockResolvedValueOnce([{ ...mockEnrollment, status: "COMPLETED" }] as unknown as UserChallenge[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue(null as any);
-      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue(null as unknown as User);
+      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as unknown as UserChallenge);
 
       const req = createAuthedRequest("http://localhost/api/challenges", "PATCH", { id: "enroll-1" });
       const res = await patchChallenge(req);
@@ -522,11 +523,11 @@ describe("API Route Integration Tests", () => {
     it("PATCH: should promote user level to 3 when challenge completed and user has high points", async () => {
       const mockEnrollment = { id: "enroll-1", challengeCode: "no-car-tuesday", status: "JOINED" };
       vi.mocked(challengeRepository.getUserChallenges)
-        .mockResolvedValueOnce([mockEnrollment] as any)
-        .mockResolvedValueOnce([{ ...mockEnrollment, status: "COMPLETED" }] as any);
+        .mockResolvedValueOnce([mockEnrollment] as unknown as UserChallenge[])
+        .mockResolvedValueOnce([{ ...mockEnrollment, status: "COMPLETED" }] as unknown as UserChallenge[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 450, level: 2 } as any);
-      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 450, level: 2 } as unknown as User);
+      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as unknown as UserChallenge);
 
       const req = createAuthedRequest("http://localhost/api/challenges", "PATCH", { id: "enroll-1" });
       const res = await patchChallenge(req);
@@ -537,11 +538,11 @@ describe("API Route Integration Tests", () => {
     it("PATCH: should promote user level to 4 when challenge completed and user has high points", async () => {
       const mockEnrollment = { id: "enroll-1", challengeCode: "no-car-tuesday", status: "JOINED" };
       vi.mocked(challengeRepository.getUserChallenges)
-        .mockResolvedValueOnce([mockEnrollment] as any)
-        .mockResolvedValueOnce([{ ...mockEnrollment, status: "COMPLETED" }] as any);
+        .mockResolvedValueOnce([mockEnrollment] as unknown as UserChallenge[])
+        .mockResolvedValueOnce([{ ...mockEnrollment, status: "COMPLETED" }] as unknown as UserChallenge[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 950, level: 3 } as any);
-      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 950, level: 3 } as unknown as User);
+      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as unknown as UserChallenge);
 
       const req = createAuthedRequest("http://localhost/api/challenges", "PATCH", { id: "enroll-1" });
       const res = await patchChallenge(req);
@@ -552,14 +553,14 @@ describe("API Route Integration Tests", () => {
     it("PATCH: should not unlock achievement if completed count is neither 1 nor 3 (e.g. 2)", async () => {
       const mockEnrollment = { id: "enroll-1", challengeCode: "no-car-tuesday", status: "JOINED" };
       vi.mocked(challengeRepository.getUserChallenges)
-        .mockResolvedValueOnce([mockEnrollment] as any)
+        .mockResolvedValueOnce([mockEnrollment] as unknown as UserChallenge[])
         .mockResolvedValueOnce([
           { ...mockEnrollment, status: "COMPLETED" },
           { id: "e2", challengeCode: "plant-based-weekend", status: "COMPLETED" },
-        ] as any);
+        ] as unknown as UserChallenge[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 200, level: 2 } as any);
-      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 200, level: 2 } as unknown as User);
+      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as unknown as UserChallenge);
 
       const req = createAuthedRequest("http://localhost/api/challenges", "PATCH", { id: "enroll-1" });
       const res = await patchChallenge(req);
@@ -570,11 +571,11 @@ describe("API Route Integration Tests", () => {
     it("PATCH: should use empty dynamic challenges when assessment is null", async () => {
       const mockEnrollment = { id: "enroll-1", challengeCode: "no-car-tuesday", status: "JOINED" };
       vi.mocked(challengeRepository.getUserChallenges)
-        .mockResolvedValueOnce([mockEnrollment] as any)
-        .mockResolvedValueOnce([{ ...mockEnrollment, status: "COMPLETED" }] as any);
+        .mockResolvedValueOnce([mockEnrollment] as unknown as UserChallenge[])
+        .mockResolvedValueOnce([{ ...mockEnrollment, status: "COMPLETED" }] as unknown as UserChallenge[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 200, level: 2 } as any);
-      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 200, level: 2 } as unknown as User);
+      vi.mocked(challengeRepository.completeChallenge).mockResolvedValue({ ...mockEnrollment, status: "COMPLETED" } as unknown as UserChallenge);
 
       const req = createAuthedRequest("http://localhost/api/challenges", "PATCH", { id: "enroll-1" });
       const res = await patchChallenge(req);
@@ -583,7 +584,7 @@ describe("API Route Integration Tests", () => {
 
     it("PATCH: should return 500 when completion throws unexpected error", async () => {
       const mockEnrollment = { id: "enroll-1", challengeCode: "no-car-tuesday", status: "JOINED" };
-      vi.mocked(challengeRepository.getUserChallenges).mockResolvedValue([mockEnrollment] as any);
+      vi.mocked(challengeRepository.getUserChallenges).mockResolvedValue([mockEnrollment] as unknown as UserChallenge[]);
       vi.mocked(challengeRepository.completeChallenge).mockRejectedValue(new Error("DB error"));
 
       const req = createAuthedRequest("http://localhost/api/challenges", "PATCH", { id: "enroll-1" });
@@ -595,7 +596,7 @@ describe("API Route Integration Tests", () => {
   describe("/api/carbon/assessment Routes", () => {
     it("GET: should return null or latest assessment", async () => {
       const mockAss = { id: "ass1", carbonScore: 88 };
-      vi.mocked(assessmentRepository.getLatestAssessment).mockResolvedValue(mockAss as any);
+      vi.mocked(assessmentRepository.getLatestAssessment).mockResolvedValue(mockAss as unknown as CarbonAssessment as CarbonAssessment);
 
       const req = createAuthedRequest("http://localhost/api/carbon/assessment", "GET");
       const res = await getAssessment(req);
@@ -622,9 +623,9 @@ describe("API Route Integration Tests", () => {
 
     it("POST: should successfully save assessment and update user profile stats (first assessment)", async () => {
       const savedAss = { id: "ass-1", carbonScore: 85 };
-      vi.mocked(assessmentRepository.saveAssessment).mockResolvedValue(savedAss as any);
-      vi.mocked(assessmentRepository.getAssessmentsHistory).mockResolvedValue([savedAss] as any);
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 0, level: 1 } as any);
+      vi.mocked(assessmentRepository.saveAssessment).mockResolvedValue(savedAss as unknown as CarbonAssessment as CarbonAssessment);
+      vi.mocked(assessmentRepository.getAssessmentsHistory).mockResolvedValue([savedAss] as unknown as CarbonAssessment[]);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 0, level: 1 } as unknown as User);
 
       const req = createAuthedRequest("http://localhost/api/carbon/assessment", "POST", {
         transportKm: 10,
@@ -647,9 +648,9 @@ describe("API Route Integration Tests", () => {
 
     it("POST: should save subsequent assessment and award 50 points", async () => {
       const savedAss = { id: "ass-2", carbonScore: 88 };
-      vi.mocked(assessmentRepository.saveAssessment).mockResolvedValue(savedAss as any);
-      vi.mocked(assessmentRepository.getAssessmentsHistory).mockResolvedValue([{ id: "ass-1" }, savedAss] as any);
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 150, level: 1 } as any);
+      vi.mocked(assessmentRepository.saveAssessment).mockResolvedValue(savedAss as unknown as CarbonAssessment as CarbonAssessment);
+      vi.mocked(assessmentRepository.getAssessmentsHistory).mockResolvedValue([{ id: "ass-1" }, savedAss] as unknown as CarbonAssessment[]);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 150, level: 1 } as unknown as User);
 
       const req = createAuthedRequest("http://localhost/api/carbon/assessment", "POST", {
         transportKm: 10,
@@ -670,9 +671,9 @@ describe("API Route Integration Tests", () => {
 
     it("POST: should handle assessment save when user profile is null", async () => {
       const savedAss = { id: "ass-1", carbonScore: 85 };
-      vi.mocked(assessmentRepository.saveAssessment).mockResolvedValue(savedAss as any);
-      vi.mocked(assessmentRepository.getAssessmentsHistory).mockResolvedValue([savedAss] as any);
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue(null as any);
+      vi.mocked(assessmentRepository.saveAssessment).mockResolvedValue(savedAss as unknown as CarbonAssessment as CarbonAssessment);
+      vi.mocked(assessmentRepository.getAssessmentsHistory).mockResolvedValue([savedAss] as unknown as CarbonAssessment[]);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue(null as unknown as User);
 
       const req = createAuthedRequest("http://localhost/api/carbon/assessment", "POST", {
         transportKm: 10,
@@ -691,10 +692,10 @@ describe("API Route Integration Tests", () => {
 
     it("POST: should promote user level to 3 when assessment completed and user has high points", async () => {
       const savedAss = { id: "ass-1", carbonScore: 85 };
-      vi.mocked(assessmentRepository.saveAssessment).mockResolvedValue(savedAss as any);
-      vi.mocked(assessmentRepository.getAssessmentsHistory).mockResolvedValue([savedAss] as any);
+      vi.mocked(assessmentRepository.saveAssessment).mockResolvedValue(savedAss as unknown as CarbonAssessment as CarbonAssessment);
+      vi.mocked(assessmentRepository.getAssessmentsHistory).mockResolvedValue([savedAss] as unknown as CarbonAssessment[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 400, level: 2 } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 400, level: 2 } as unknown as User);
       const req = createAuthedRequest("http://localhost/api/carbon/assessment", "POST", {
         transportKm: 10,
         transportType: "car_petrol",
@@ -711,10 +712,10 @@ describe("API Route Integration Tests", () => {
 
     it("POST: should promote user level to 4 when assessment completed and user has high points", async () => {
       const savedAss = { id: "ass-1", carbonScore: 85 };
-      vi.mocked(assessmentRepository.saveAssessment).mockResolvedValue(savedAss as any);
-      vi.mocked(assessmentRepository.getAssessmentsHistory).mockResolvedValue([savedAss] as any);
+      vi.mocked(assessmentRepository.saveAssessment).mockResolvedValue(savedAss as unknown as CarbonAssessment as CarbonAssessment);
+      vi.mocked(assessmentRepository.getAssessmentsHistory).mockResolvedValue([savedAss] as unknown as CarbonAssessment[]);
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 900, level: 3 } as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue({ id: "u1", points: 900, level: 3 } as unknown as User);
       const req = createAuthedRequest("http://localhost/api/carbon/assessment", "POST", {
         transportKm: 10,
         transportType: "car_petrol",
@@ -766,9 +767,9 @@ describe("API Route Integration Tests", () => {
       const mockUser = { id: "u1", name: "User", points: 100, level: 1 };
       const mockAss = { id: "ass1", carbonScore: 75, annualFootprint: 5000, transportEmissions: 1000, energyEmissions: 1000, foodEmissions: 1000, shoppingEmissions: 1000, wasteEmissions: 1000, monthlyFootprint: 416 };
 
-      vi.mocked(userRepository.getUserProfile).mockResolvedValue(mockUser as any);
-      vi.mocked(assessmentRepository.getLatestAssessment).mockResolvedValue(mockAss as any);
-      vi.mocked(assessmentRepository.getAssessmentsHistory).mockResolvedValue([mockAss] as any);
+      vi.mocked(userRepository.getUserProfile).mockResolvedValue(mockUser as unknown as User as User);
+      vi.mocked(assessmentRepository.getLatestAssessment).mockResolvedValue(mockAss as unknown as CarbonAssessment as CarbonAssessment);
+      vi.mocked(assessmentRepository.getAssessmentsHistory).mockResolvedValue([mockAss] as unknown as CarbonAssessment[]);
       vi.mocked(goalRepository.getUserGoals).mockResolvedValue([]);
       vi.mocked(challengeRepository.getUserChallenges).mockResolvedValue([]);
       vi.mocked(userRepository.getUserAchievements).mockResolvedValue([]);
@@ -818,7 +819,7 @@ describe("API Route Integration Tests", () => {
     });
 
     it("POST: should prompt chat with assessment context if user has an assessment", async () => {
-      vi.mocked(assessmentRepository.getLatestAssessment).mockResolvedValue({ id: "ass-1", carbonScore: 78 } as any);
+      vi.mocked(assessmentRepository.getLatestAssessment).mockResolvedValue({ id: "ass-1", carbonScore: 78 } as unknown as CarbonAssessment);
 
       const req = createAuthedRequest("http://localhost/api/chat", "POST", {
         message: "Hello Coach!",
