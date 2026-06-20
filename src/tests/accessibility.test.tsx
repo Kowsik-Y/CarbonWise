@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
-import { render } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, fireEvent } from "@testing-library/react";
 import { axe, toHaveNoViolations } from "jest-axe";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,5 +105,140 @@ describe("Component Accessibility Audits (Axe-Core)", () => {
     // Verify aria-label="Close" is present on the close button
     const closeBtn = getByLabelText("Close");
     expect(closeBtn).toBeDefined();
+  });
+
+  it("Dialog: should focus the dialog container when opened and return focus to the trigger element when closed", () => {
+    // Create trigger button and focus it
+    const trigger = document.createElement("button");
+    trigger.id = "trigger-btn";
+    document.body.appendChild(trigger);
+    trigger.focus();
+    expect(document.activeElement).toBe(trigger);
+
+    // Render Dialog open
+    const { unmount, getByRole } = render(
+      <Dialog
+        isOpen={true}
+        onClose={() => {}}
+        title="Test Focus"
+        description="Focus Description"
+      />
+    );
+
+    // Verify dialog container has focus
+    const dialogContainer = getByRole("dialog");
+    expect(document.activeElement).toBe(dialogContainer);
+
+    // Unmount Dialog
+    unmount();
+
+    // Verify focus is back to the trigger button
+    expect(document.activeElement).toBe(trigger);
+
+    // Clean up DOM
+    document.body.removeChild(trigger);
+  });
+
+  it("Dialog: should trigger onClose when backdrop/overlay is clicked", () => {
+    const handleClose = vi.fn();
+    const { getByRole } = render(
+      <Dialog
+        isOpen={true}
+        onClose={handleClose}
+        title="Test Backdrop"
+        description="Backdrop Description"
+      />
+    );
+
+    const dialog = getByRole("dialog");
+    const overlay = dialog.parentElement as HTMLElement;
+    
+    // Click the overlay
+    fireEvent.click(overlay);
+
+    expect(handleClose).toHaveBeenCalled();
+  });
+
+  it("Dialog: should call onConfirm if provided when confirm button is clicked", () => {
+    const handleConfirm = vi.fn();
+    const { getByText } = render(
+      <Dialog
+        isOpen={true}
+        onClose={() => {}}
+        title="Test Confirm"
+        description="Confirm Description"
+        confirmText="Yes"
+        onConfirm={handleConfirm}
+      />
+    );
+
+    fireEvent.click(getByText("Yes"));
+    expect(handleConfirm).toHaveBeenCalled();
+  });
+
+  it("Dialog: should call onClose when confirm button is clicked and no onConfirm is provided", () => {
+    const handleClose = vi.fn();
+    const { getByText } = render(
+      <Dialog
+        isOpen={true}
+        onClose={handleClose}
+        title="Test Confirm Close"
+        description="Confirm Description"
+        confirmText="OK"
+      />
+    );
+
+    fireEvent.click(getByText("OK"));
+    expect(handleClose).toHaveBeenCalled();
+  });
+
+  it("Dialog: should call onClose when Escape key is pressed", () => {
+    const handleClose = vi.fn();
+    render(
+      <Dialog
+        isOpen={true}
+        onClose={handleClose}
+        title="Test Escape"
+        description="Escape Description"
+      />
+    );
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(handleClose).toHaveBeenCalled();
+  });
+
+  it("Dialog: should render different variants correctly", () => {
+    const { rerender, container } = render(
+      <Dialog
+        isOpen={true}
+        onClose={() => {}}
+        title="Test Variant"
+        description="Variant Description"
+        variant="success"
+      />
+    );
+    expect(container.querySelector(".text-brand")).toBeDefined();
+
+    rerender(
+      <Dialog
+        isOpen={true}
+        onClose={() => {}}
+        title="Test Variant"
+        description="Variant Description"
+        variant="error"
+      />
+    );
+    expect(container.querySelector(".text-red-500")).toBeDefined();
+
+    rerender(
+      <Dialog
+        isOpen={true}
+        onClose={() => {}}
+        title="Test Variant"
+        description="Variant Description"
+        variant="warning"
+      />
+    );
+    expect(container.querySelector(".text-yellow-500")).toBeDefined();
   });
 });

@@ -216,6 +216,17 @@ describe("Repository Layer Tests (Firebase Path)", () => {
       expect(firestore.updateDoc).toHaveBeenCalled();
       expect(firestore.getDoc).toHaveBeenCalled();
     });
+
+    it("should return null if goal is not found in firestore on update", async () => {
+      vi.mocked(firestore.getDoc).mockResolvedValueOnce({
+        exists: () => false,
+        id: "goal-1",
+        data: () => ({}),
+      } as unknown as firestore.DocumentSnapshot);
+
+      const res = await goalRepository.updateGoal("test-user-123", "goal-1", "COMPLETED");
+      expect(res).toBeNull();
+    });
   });
 
   describe("Challenge Repository", () => {

@@ -1,6 +1,26 @@
-
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import bcrypt from "bcryptjs";
+
+const mockCookieStore = {
+  set: vi.fn(),
+  get: vi.fn(),
+  delete: vi.fn(),
+};
+
+vi.mock("next/headers", () => ({
+  cookies: vi.fn().mockImplementation(() => Promise.resolve(mockCookieStore)),
+}));
+vi.mock("@/services/auth", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/services/auth")>();
+  return {
+    ...original,
+    signToken: vi.fn().mockResolvedValue("mock-session-jwt-token"),
+    verifyToken: vi.fn(),
+  };
+});
+
+import { verifyToken } from "@/services/auth";
 import { GET as getGoals, POST as postGoal, PATCH as patchGoal } from "@/app/api/goals/route";
 import { GET as getChallenges, POST as postChallenge, PATCH as patchChallenge } from "@/app/api/challenges/route";
 import { GET as getAssessment, POST as postAssessment, DELETE as deleteAssessment } from "@/app/api/carbon/assessment/route";
@@ -25,6 +45,7 @@ vi.mock("@/repositories/user.repository", () => {
   return {
     userRepository: {
       getUserProfile: vi.fn(),
+      createUserProfile: vi.fn(),
       updateUserPoints: vi.fn(),
       getUserAchievements: vi.fn(),
       addAchievement: vi.fn(),
@@ -918,6 +939,329 @@ describe("API Route Integration Tests", () => {
       expect(res.status).toBe(429);
       const data = await res.json();
       expect(data.error).toContain("Too many failed login attempts");
+    });
+
+    it("POST: should fail when email or password is missing", async () => {
+      const resetReq = new NextRequest("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: { "x-reset-rate-limit": "true" },
+      });
+      await postLogin(resetReq);
+
+      const req = new NextRequest("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "onlyemail@carbonwise.com" }),
+      });
+      const res = await postLogin(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("Email and password are required");
+    });
+
+    it("POST: should fail when user has no passwordHash", async () => {
+      const resetReq = new NextRequest("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: { "x-reset-rate-limit": "true" },
+      });
+      await postLogin(resetReq);
+
+      vi.mocked(userRepository.getUserByEmail).mockResolvedValue({
+        id: "user-123",
+        name: "Firebase User",
+        email: "firebase-only@carbonwise.com",
+        points: 0,
+        level: 1,
+        createdAt: new Date(),
+      });
+
+      const req = new NextRequest("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "firebase-only@carbonwise.com", password: "some-password" }),
+      });
+      const res = await postLogin(req);
+      expect(res.status).toBe(401);
+    });
+
+    it("POST: should rate limit after threshold is exceeded for the same email across different IPs", async () => {
+      // First, reset the rate limiter map
+      const resetReq = new NextRequest("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: { "x-reset-rate-limit": "true" },
+      });
+      await postLogin(resetReq);
+
+      vi.mocked(userRepository.getUserByEmail).mockResolvedValue(null);
+      const email = `limit-email@carbonwise.com`;
+
+      // 5 failed login attempts from different IPs
+      for (let i = 0; i < 5; i++) {
+        const req = new NextRequest("http://localhost/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-forwarded-for": `192.168.1.${i}`,
+          },
+          body: JSON.stringify({ email, password: "wrongpassword" }),
+        });
+        const res = await postLogin(req);
+        expect(res.status).toBe(401);
+      }
+
+      // The 6th attempt (even from a new IP) should return 429 because of email rate limit
+      const limitReq = new NextRequest("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-forwarded-for": "192.168.1.99",
+        },
+        body: JSON.stringify({ email, password: "wrongpassword" }),
+      });
+      const res = await postLogin(limitReq);
+      expect(res.status).toBe(429);
+    });
+
+    it("POST: should rate limit after threshold is exceeded for the same IP across different emails", async () => {
+      // First, reset the rate limiter map
+      const resetReq = new NextRequest("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: { "x-reset-rate-limit": "true" },
+      });
+      await postLogin(resetReq);
+
+      vi.mocked(userRepository.getUserByEmail).mockResolvedValue(null);
+      const ip = "192.168.2.1";
+
+      // 5 failed login attempts for different emails from same IP
+      for (let i = 0; i < 5; i++) {
+        const req = new NextRequest("http://localhost/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-forwarded-for": ip,
+          },
+          body: JSON.stringify({ email: `email-${i}@carbonwise.com`, password: "wrongpassword" }),
+        });
+        const res = await postLogin(req);
+        expect(res.status).toBe(401);
+      }
+
+      // The 6th attempt (even for a new email) should return 429 because of IP rate limit
+      const limitReq = new NextRequest("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-forwarded-for": ip,
+        },
+        body: JSON.stringify({ email: "another-email@carbonwise.com", password: "wrongpassword" }),
+      });
+      const res = await postLogin(limitReq);
+      expect(res.status).toBe(429);
+    });
+
+    it("POST: should reset/expire the rate limit window correctly", async () => {
+      vi.useFakeTimers();
+      try {
+        // Reset the rate limiter map
+        const resetReq = new NextRequest("http://localhost/api/auth/login", {
+          method: "POST",
+          headers: { "x-reset-rate-limit": "true" },
+        });
+        await postLogin(resetReq);
+
+        vi.mocked(userRepository.getUserByEmail).mockResolvedValue(null);
+        const email = "timer-email@carbonwise.com";
+
+        // 5 failed login attempts
+        for (let i = 0; i < 5; i++) {
+          const req = new NextRequest("http://localhost/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password: "wrongpassword" }),
+          });
+          const res = await postLogin(req);
+          expect(res.status).toBe(401);
+        }
+
+        // The 6th attempt should return 429
+        const limitReq = new NextRequest("http://localhost/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password: "wrongpassword" }),
+        });
+        let res = await postLogin(limitReq);
+        expect(res.status).toBe(429);
+
+        // Advance timers by 15 minutes + 1 second
+        vi.advanceTimersByTime(15 * 60 * 1000 + 1000);
+
+        // Now attempt should succeed/fail with 401 again (no longer rate limited)
+        const tryAgainReq = new NextRequest("http://localhost/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password: "wrongpassword" }),
+        });
+        res = await postLogin(tryAgainReq);
+        expect(res.status).toBe(401);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("POST: successful login should clear rate limit state and not stay rate-limited", async () => {
+      // First, reset the rate limiter map
+      const resetReq = new NextRequest("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: { "x-reset-rate-limit": "true" },
+      });
+      await postLogin(resetReq);
+
+      const email = "success-email@carbonwise.com";
+      const password = "correctpassword";
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      vi.mocked(userRepository.getUserByEmail).mockResolvedValue({
+        id: "user-123",
+        name: "Test User",
+        email,
+        passwordHash: hashedPassword,
+        points: 0,
+        level: 1,
+        createdAt: new Date(),
+      });
+
+      // 4 failed attempts
+      for (let i = 0; i < 4; i++) {
+        const req = new NextRequest("http://localhost/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password: "wrongpassword" }),
+        });
+        const res = await postLogin(req);
+        expect(res.status).toBe(401);
+      }
+
+      // Successful attempt
+      const successReq = new NextRequest("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const successRes = await postLogin(successReq);
+      expect(successRes.status).toBe(200);
+
+      // Now, 2 more failed attempts (should not rate limit because success cleared the counter)
+      for (let i = 0; i < 2; i++) {
+        const req = new NextRequest("http://localhost/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password: "wrongpassword" }),
+        });
+        const res = await postLogin(req);
+        expect(res.status).toBe(401);
+      }
+    });
+
+    it("POST: should fail login validation with invalid email format", async () => {
+      const req = new NextRequest("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "invalid-email", password: "123" }),
+      });
+      const res = await postLogin(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("Invalid email address");
+    });
+
+    it("POST (Firebase): should fail if verifyToken returns null", async () => {
+      process.env.NEXT_PUBLIC_FIREBASE_API_KEY = "mock-api-key";
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "mock-project-id";
+
+      try {
+        vi.mocked(verifyToken).mockResolvedValue(null);
+
+        const req = new NextRequest("http://localhost/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken: "invalid-id-token" }),
+        });
+        const res = await postLogin(req);
+        expect(res.status).toBe(401);
+        const data = await res.json();
+        expect(data.error).toContain("Invalid Firebase ID token");
+      } finally {
+        delete process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+        delete process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+      }
+    });
+
+    it("POST (Firebase): should login successfully and create user profile if not exists", async () => {
+      process.env.NEXT_PUBLIC_FIREBASE_API_KEY = "mock-api-key";
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "mock-project-id";
+
+      try {
+        vi.mocked(verifyToken).mockResolvedValue({
+          userId: "firebase-user-123",
+          email: "firebase@user.com",
+        });
+        vi.mocked(userRepository.getUserProfile).mockResolvedValue(null);
+        vi.mocked(userRepository.createUserProfile).mockResolvedValue({
+          id: "firebase-user-123",
+          name: "firebase",
+          email: "firebase@user.com",
+          points: 0,
+          level: 1,
+          createdAt: new Date(),
+        });
+
+        const req = new NextRequest("http://localhost/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken: "firebase-id-token" }),
+        });
+        const res = await postLogin(req);
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.user.name).toBe("firebase");
+      } finally {
+        delete process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+        delete process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+      }
+    });
+
+    it("POST (Firebase): should login successfully if profile exists", async () => {
+      process.env.NEXT_PUBLIC_FIREBASE_API_KEY = "mock-api-key";
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "mock-project-id";
+
+      try {
+        vi.mocked(verifyToken).mockResolvedValue({
+          userId: "firebase-user-123",
+          email: "firebase@user.com",
+        });
+        vi.mocked(userRepository.getUserProfile).mockResolvedValue({
+          id: "firebase-user-123",
+          name: "Existing Eco Hero",
+          email: "firebase@user.com",
+          points: 200,
+          level: 2,
+          createdAt: new Date(),
+        });
+
+        const req = new NextRequest("http://localhost/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken: "firebase-id-token" }),
+        });
+        const res = await postLogin(req);
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.user.name).toBe("Existing Eco Hero");
+      } finally {
+        delete process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+        delete process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+      }
     });
   });
 });

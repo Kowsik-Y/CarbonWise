@@ -87,8 +87,8 @@ npm audit fix
 - [x] No secrets in `NEXT_PUBLIC_*` environment variables
 - [x] Auth-loading guard on client pages (prevents flash of unauthenticated UI)
 - [x] Input-validated carbon assessment data before emission calculation
-- [ ] Rate limiting on auth endpoints (recommended for production)
-- [ ] Content Security Policy (CSP) headers (recommended for production)
+- [x] Rate limiting on auth endpoints (recommended for production)
+- [x] Content Security Policy (CSP) headers (recommended for production)
 - [ ] Playwright E2E auth flow security tests (planned)
 
 ---
@@ -120,23 +120,13 @@ service cloud.firestore {
 }
 ```
 
-### 2. Add Next.js Security Headers
+### 2. Next.js Security Headers & CSP
 
-Add to `next.config.ts`:
-
-```ts
-const securityHeaders = [
-  { key: "X-DNS-Prefetch-Control", value: "on" },
-  { key: "X-Frame-Options", value: "SAMEORIGIN" },
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-];
-```
+Implemented. Centralized security headers and Content Security Policy (CSP) are defined in [next.config.ts](file:///Users/kowsik/Documents/CarbonWise/next.config.ts) under the `headers()` async configuration function.
 
 ### 3. Rate Limit Auth Endpoints
 
-Use an edge middleware or an upstream proxy (e.g. Vercel Edge Middleware, Cloudflare) to rate-limit `/api/auth/login` and `/api/auth/signup` to prevent brute-force attacks.
+Implemented. Brute-force protection on auth endpoints is configured via an in-memory sliding-window rate limiter tracking both email and IP address in [src/app/api/auth/login/route.ts](file:///Users/kowsik/Documents/CarbonWise/src/app/api/auth/login/route.ts).
 
 ### 4. Rotate JWT_SECRET
 
