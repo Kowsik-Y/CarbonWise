@@ -5,18 +5,16 @@ let secretKey: Uint8Array;
 if (process.env.JWT_SECRET) {
   secretKey = new TextEncoder().encode(process.env.JWT_SECRET);
 } else {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("JWT_SECRET environment variable is required in production");
+  const randomBuffer = new Uint8Array(32);
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    crypto.getRandomValues(randomBuffer);
   } else {
-    const randomBuffer = new Uint8Array(32);
-    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-      crypto.getRandomValues(randomBuffer);
-    } else {
-      for (let i = 0; i < 32; i++) {
-        randomBuffer[i] = Math.floor(Math.random() * 256);
-      }
+    for (let i = 0; i < 32; i++) {
+      randomBuffer[i] = Math.floor(Math.random() * 256);
     }
-    secretKey = randomBuffer;
+  }
+  secretKey = randomBuffer;
+  if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
     logger.warn("JWT_SECRET environment variable is not set. A random secret key has been generated for this session. Session tokens will not persist across restarts.");
   }
 }
@@ -39,6 +37,9 @@ try {
  * @returns A promise resolving to the signed JWT token.
  */
 export async function signToken(payload: { userId: string; email: string }) {
+  if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET environment variable is required in production");
+  }
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -72,6 +73,9 @@ export async function verifyToken(token: string) {
       return null;
     }
   } else {
+    if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
+      throw new Error("JWT_SECRET environment variable is required in production");
+    }
     try {
       const { payload } = await jwtVerify(token, JWT_SECRET);
       return payload as { userId: string; email: string };

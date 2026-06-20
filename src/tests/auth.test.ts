@@ -50,6 +50,20 @@ describe("Auth JWT Service Tests", () => {
     expect(verified).toBeNull();
   });
 
+  it("should throw an error in production if JWT_SECRET is missing", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("JWT_SECRET", "");
+
+    await expect(signToken({ userId: "test", email: "test@example.com" })).rejects.toThrow(
+      "JWT_SECRET environment variable is required in production"
+    );
+    await expect(verifyToken("some-token")).rejects.toThrow(
+      "JWT_SECRET environment variable is required in production"
+    );
+
+    vi.unstubAllEnvs();
+  });
+
   it("should attempt Firebase JWT verification if environment is configured", async () => {
     process.env.NEXT_PUBLIC_FIREBASE_API_KEY = "mock-key";
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = "mock-project";
