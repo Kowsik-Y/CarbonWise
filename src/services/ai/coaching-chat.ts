@@ -113,6 +113,8 @@ Guidelines:
   const pShop = Math.round((shoppingEmissions / total) * 100);
   const pWaste = Math.round((wasteEmissions / total) * 100);
 
+  const percentages: AssessmentPercentages = { pTrans, pEnergy, pFood, pShop, pWaste };
+
   // Find biggest contributor
   const categories = [
     { name: "Transportation", value: transportEmissions, pct: pTrans },
@@ -136,29 +138,7 @@ Guidelines:
     queryLower.includes("flight") ||
     queryLower.includes("plane")
   ) {
-    let advice = `### Transportation Assessment 🚗\n\n`;
-    advice += `Your transportation habits emit **${Math.round(
-      transportEmissions
-    )} kg CO₂e** annually, which represents **${pTrans}%** of your footprint.\n\n`;
-
-    if (transportType === "car_petrol" || transportType === "car_diesel") {
-      advice += `Since you commute **${transportKm} km/day** using a petrol or diesel car, it is a key reduction target. Here are three steps you can take:\n`;
-      advice += `* **Public Transit:** Commuting via bus or train just 2 days a week could save around **${Math.round(
-        transportEmissions * 0.4
-      )} kg CO₂e** a year.\n`;
-      advice += `* **Carpooling/Active Transit:** Cycling or carpooling with colleagues lowers your direct emissions immediately.\n`;
-      advice += `* **EV Transition:** Switching to an electric vehicle would drop your transit emissions from ${Math.round(
-        transportEmissions
-      )} kg to just **${Math.round(transportKm * 365 * 0.05)} kg CO₂e** per year!`;
-    } else if (transportType === "car_electric") {
-      advice += `Great job driving an electric car! Your transit footprint is relatively low (**${Math.round(
-        transportEmissions
-      )} kg**). Keep using clean charging sources where possible to further reduce grid carbon impact.`;
-    } else {
-      advice += `You commute **${transportKm} km/day** via public transit or active means. This is excellent! Public transit emits only ~0.03 kg CO2e/km, making your travel highly sustainable.`;
-    }
-
-    return advice;
+    return getTransportAdvice(assessment, percentages);
   }
 
   // 2. Query: Diet / Meat / Beef / Chicken / Food / Eat / Vegetarian / Vegan
@@ -172,25 +152,7 @@ Guidelines:
     queryLower.includes("vegetarian") ||
     queryLower.includes("vegan")
   ) {
-    let advice = `### Sustainable Eating Advice 🍽️\n\n`;
-    advice += `Your diet contributes **${Math.round(
-      foodEmissions
-    )} kg CO₂e** annually (**${pFood}%** of your total footprint).\n\n`;
-
-    if (foodHabits === "high_meat" || foodHabits === "low_meat") {
-      advice += `You've indicated a meat-inclusive diet. Animal agriculture, especially red meat (beef, lamb), is highly carbon-intensive:\n`;
-      advice += `* **Beef vs. Chicken:** Beef emissions (~27 kg CO₂/kg) are 4x higher than chicken (~6.9 kg CO₂/kg). Shifting beef meals to poultry saves significant carbon.\n`;
-      advice += `* **Meatless Mondays:** Eliminating meat just 1 day a week will reduce your annual diet emissions by **${Math.round(
-        foodEmissions * 0.14
-      )} kg CO₂e**!\n`;
-      advice += `* **Plant-Based transition:** Going vegetarian or vegan can shrink your food footprint by **40% to 70%** (saving up to **${Math.round(
-        foodEmissions - 600
-      )} kg CO₂e** annually).`;
-    } else {
-      advice += `As a ${foodHabits}, your food emissions are low at **${foodEmissions} kg CO₂e/year**. This is one of the most effective lifestyle choices for the planet! To optimize further, try to minimize food waste and purchase locally grown, seasonal produce.`;
-    }
-
-    return advice;
+    return getDietAdvice(assessment, percentages);
   }
 
   // 3. Query: Electricity / Energy / Bill / Heating / Solar / Power
@@ -202,20 +164,7 @@ Guidelines:
     queryLower.includes("led") ||
     queryLower.includes("power")
   ) {
-    let advice = `### Energy Conservation Coaching ⚡\n\n`;
-    advice += `Your home energy use accounts for **${Math.round(
-      energyEmissions
-    )} kg CO₂e** annually (**${pEnergy}%** of your footprint).\n\n`;
-
-    advice += `Here are the highest impact ways to cut electricity usage:\n`;
-    advice += `* **Switch to LEDs:** Replacing traditional bulbs with LEDs reduces lighting electricity usage by 75%.\n`;
-    advice += `* **Thermostat Adjustment:** Adjusting your AC/heating by just 1°C (2°F) can decrease your energy bill and emissions by **5-8%**.\n`;
-    advice += `* **Phantom Loads:** Unplugging chargers and devices on standby saves average households about 100 kg CO₂e a year.\n`;
-    if (electricityBill > 100) {
-      advice += `* **Solar Panels:** Given your moderate-to-high electricity bill ($${electricityBill}/month), home solar panels could offset up to 100% of your energy footprint!`;
-    }
-
-    return advice;
+    return getEnergyAdvice(assessment, percentages);
   }
 
   // 4. Query: Recycle / Waste / Compost / Plastic
@@ -226,24 +175,118 @@ Guidelines:
     queryLower.includes("plastic") ||
     queryLower.includes("landfill")
   ) {
-    let advice = `### Waste & Recycling Assessment ♻️\n\n`;
-    advice += `Waste management represents **${Math.round(
-      wasteEmissions
-    )} kg CO₂e** annually (**${pWaste}%** of your total footprint).\n\n`;
-
-    if (wasteHabits === "no_recycling" || wasteHabits === "recycle_some") {
-      advice += `Improving waste habits has a environmental payoff beyond carbon (reducing ocean plastics and methane landfill leaks):\n`;
-      advice += `* **Composting:** Methane emissions from organic waste in landfills are highly potent. Composting food scraps cuts this to near zero.\n`;
-      advice += `* **Rigorous Recycling:** Separating paper, glass, aluminum, and plastics reduces manufacturing carbon footprint.\n`;
-      advice += `* **Refuse Single-Use:** Carry reusable shopping bags, coffee cups, and water bottles to eliminate plastic waste.`;
-    } else {
-      advice += `You recycle and compost regularly! Your waste footprint is at a minimum (**100 kg CO₂e**). Focus on avoiding single-use plastics and packaging entirely to reach zero-waste.`;
-    }
-
-    return advice;
+    return getWasteAdvice(assessment, percentages);
   }
 
   // 5. Query: General "How do I reduce my footprint?" or greetings
+  return getGeneralAdvice(assessment, biggest, second);
+}
+
+interface AssessmentPercentages {
+  pTrans: number;
+  pEnergy: number;
+  pFood: number;
+  pShop: number;
+  pWaste: number;
+}
+
+function getTransportAdvice(assessment: CarbonAssessment, percentages: AssessmentPercentages): string {
+  const { transportType, transportKm, transportEmissions } = assessment;
+  const { pTrans } = percentages;
+  let advice = `### Transportation Assessment 🚗\n\n`;
+  advice += `Your transportation habits emit **${Math.round(
+    transportEmissions
+  )} kg CO₂e** annually, which represents **${pTrans}%** of your footprint.\n\n`;
+
+  if (transportType === "car_petrol" || transportType === "car_diesel") {
+    advice += `Since you commute **${transportKm} km/day** using a petrol or diesel car, it is a key reduction target. Here are three steps you can take:\n`;
+    advice += `* **Public Transit:** Commuting via bus or train just 2 days a week could save around **${Math.round(
+      transportEmissions * 0.4
+    )} kg CO₂e** a year.\n`;
+    advice += `* **Carpooling/Active Transit:** Cycling or carpooling with colleagues lowers your direct emissions immediately.\n`;
+    advice += `* **EV Transition:** Switching to an electric vehicle would drop your transit emissions from ${Math.round(
+      transportEmissions
+    )} kg to just **${Math.round(transportKm * 365 * 0.05)} kg CO₂e** per year!`;
+  } else if (transportType === "car_electric") {
+    advice += `Great job driving an electric car! Your transit footprint is relatively low (**${Math.round(
+      transportEmissions
+    )} kg**). Keep using clean charging sources where possible to further reduce grid carbon impact.`;
+  } else {
+    advice += `You commute **${transportKm} km/day** via public transit or active means. This is excellent! Public transit emits only ~0.03 kg CO2e/km, making your travel highly sustainable.`;
+  }
+
+  return advice;
+}
+
+function getDietAdvice(assessment: CarbonAssessment, percentages: AssessmentPercentages): string {
+  const { foodEmissions, foodHabits } = assessment;
+  const { pFood } = percentages;
+  let advice = `### Sustainable Eating Advice 🍽️\n\n`;
+  advice += `Your diet contributes **${Math.round(
+    foodEmissions
+  )} kg CO₂e** annually (**${pFood}%** of your total footprint).\n\n`;
+
+  if (foodHabits === "high_meat" || foodHabits === "low_meat") {
+    advice += `You've indicated a meat-inclusive diet. Animal agriculture, especially red meat (beef, lamb), is highly carbon-intensive:\n`;
+    advice += `* **Beef vs. Chicken:** Beef emissions (~27 kg CO₂/kg) are 4x higher than chicken (~6.9 kg CO₂/kg). Shifting beef meals to poultry saves significant carbon.\n`;
+    advice += `* **Meatless Mondays:** Eliminating meat just 1 day a week will reduce your annual diet emissions by **${Math.round(
+      foodEmissions * 0.14
+    )} kg CO₂e**!\n`;
+    advice += `* **Plant-Based transition:** Going vegetarian or vegan can shrink your food footprint by **40% to 70%** (saving up to **${Math.round(
+      foodEmissions - 600
+    )} kg CO₂e** annually).`;
+  } else {
+    advice += `As a ${foodHabits}, your food emissions are low at **${foodEmissions} kg CO₂e/year**. This is one of the most effective lifestyle choices for the planet! To optimize further, try to minimize food waste and purchase locally grown, seasonal produce.`;
+  }
+
+  return advice;
+}
+
+function getEnergyAdvice(assessment: CarbonAssessment, percentages: AssessmentPercentages): string {
+  const { energyEmissions, electricityBill } = assessment;
+  const { pEnergy } = percentages;
+  let advice = `### Energy Conservation Coaching ⚡\n\n`;
+  advice += `Your home energy use accounts for **${Math.round(
+    energyEmissions
+  )} kg CO₂e** annually (**${pEnergy}%** of your footprint).\n\n`;
+
+  advice += `Here are the highest impact ways to cut electricity usage:\n`;
+  advice += `* **Switch to LEDs:** Replacing traditional bulbs with LEDs reduces lighting electricity usage by 75%.\n`;
+  advice += `* **Thermostat Adjustment:** Adjusting your AC/heating by just 1°C (2°F) can decrease your energy bill and emissions by **5-8%**.\n`;
+  advice += `* **Phantom Loads:** Unplugging chargers and devices on standby saves average households about 100 kg CO₂e a year.\n`;
+  if (electricityBill > 100) {
+    advice += `* **Solar Panels:** Given your moderate-to-high electricity bill ($${electricityBill}/month), home solar panels could offset up to 100% of your energy footprint!`;
+  }
+
+  return advice;
+}
+
+function getWasteAdvice(assessment: CarbonAssessment, percentages: AssessmentPercentages): string {
+  const { wasteEmissions, wasteHabits } = assessment;
+  const { pWaste } = percentages;
+  let advice = `### Waste & Recycling Assessment ♻️\n\n`;
+  advice += `Waste management represents **${Math.round(
+    wasteEmissions
+  )} kg CO₂e** annually (**${pWaste}%** of your total footprint).\n\n`;
+
+  if (wasteHabits === "no_recycling" || wasteHabits === "recycle_some") {
+    advice += `Improving waste habits has a environmental payoff beyond carbon (reducing ocean plastics and methane landfill leaks):\n`;
+    advice += `* **Composting:** Methane emissions from organic waste in landfills are highly potent. Composting food scraps cuts this to near zero.\n`;
+    advice += `* **Rigorous Recycling:** Separating paper, glass, aluminum, and plastics reduces manufacturing carbon footprint.\n`;
+    advice += `* **Refuse Single-Use:** Carry reusable shopping bags, coffee cups, and water bottles to eliminate plastic waste.`;
+  } else {
+    advice += `You recycle and compost regularly! Your waste footprint is at a minimum (**100 kg CO₂e**). Focus on avoiding single-use plastics and packaging entirely to reach zero-waste.`;
+  }
+
+  return advice;
+}
+
+function getGeneralAdvice(
+  assessment: CarbonAssessment,
+  biggest: { name: string; pct: number },
+  second: { name: string; pct: number }
+): string {
+  const { carbonScore, annualFootprint } = assessment;
   let advice = `Hello! I'm your AI Sustainability Coach. 🌲\n\n`;
   advice += `Your overall **Sustainability Score is ${carbonScore}/100** with an annual footprint of **${(
     annualFootprint / 1000

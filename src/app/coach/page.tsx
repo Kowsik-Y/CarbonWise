@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { useApi } from "@/hooks/use-api";
 import { CarbonAssessment } from "@/types";
 import { CoachEvaluationPanel } from "@/features/ai/coach-evaluation-panel";
+import { PageLoader } from "@/components/ui/page-loader";
 
 interface Message {
   role: "user" | "assistant";
@@ -175,11 +176,7 @@ export default function CoachPage() {
   ];
 
   if (loading || fetching) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[#090d10]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (

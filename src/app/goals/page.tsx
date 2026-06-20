@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-context";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Target, Check, CheckCircle2, Sparkles } from "lucide-react";
+import { PageLoader } from "@/components/ui/page-loader";
 import { Goal, AIRecommendation } from "@/types";
 import { useApi } from "@/hooks/use-api";
 import { RecommendationCard } from "@/features/goals/recommendation-card";
@@ -124,11 +125,7 @@ export default function GoalsPage() {
   const totalCarbonReduced = completedGoals.reduce((sum, g) => sum + g.co2Reduction, 0);
 
   if (loading || fetching || !user) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[#090d10]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   // Filter recommendations to avoid showing already active ones

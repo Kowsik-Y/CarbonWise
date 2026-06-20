@@ -10,6 +10,7 @@ import { Leaf, Target, Award, ArrowRight, Activity, Calendar, Zap, Sparkles } fr
 import { CarbonAssessment, Goal, Achievement } from "@/types";
 
 import { useApi } from "@/hooks/use-api";
+import { PageLoader } from "@/components/ui/page-loader";
 
 interface DashboardData {
   latestAssessment: CarbonAssessment;
@@ -56,11 +57,7 @@ export default function DashboardPage() {
   }, [user, loading, router, request]);
 
   if (loading || fetching || !dashboardData || !dashboardData.latestAssessment || !user) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[#090d10]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   const { latestAssessment, assessmentsHistory, goals, achievements } = dashboardData;

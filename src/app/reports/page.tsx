@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Download, Sparkles, ArrowRight, TrendingUp, Award, AlertTriangle, ArrowLeft } from "lucide-react";
 import { WeeklyReport } from "@/types";
 import { useApi } from "@/hooks/use-api";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ReportsPage() {
   const { user, loading } = useAuth();
@@ -62,11 +63,7 @@ export default function ReportsPage() {
   const error = fetchError || genError;
 
   if (loading || (loadingReports && reports.length === 0)) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[#090d10]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (

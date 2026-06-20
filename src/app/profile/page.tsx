@@ -17,6 +17,7 @@ interface Achievement {
 }
 
 import { useApi } from "@/hooks/use-api";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ProfilePage() {
   const { user, logout, refreshSession, loading, showToast } = useAuth();
@@ -64,11 +65,7 @@ export default function ProfilePage() {
   };
 
   if (loading || fetching || !user) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[#090d10]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (

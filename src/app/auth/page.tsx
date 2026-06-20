@@ -6,8 +6,9 @@ import { useAuth } from "@/features/auth/auth-context";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Leaf, Lock, Mail, User } from "lucide-react";
 import { isFirebaseConfigured } from "@/lib/firebase";
+import { PageLoader } from "@/components/ui/page-loader";
+import { Leaf, Lock, Mail, User } from "lucide-react";
 
 function AuthForm() {
   const router = useRouter();
@@ -232,11 +233,7 @@ function AuthForm() {
 
 export default function AuthPage() {
   return (
-    <Suspense fallback={
-      <div className="flex-1 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand" />
-      </div>
-    }>
+    <Suspense fallback={<PageLoader />}>
       <AuthForm />
     </Suspense>
   );

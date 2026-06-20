@@ -6,6 +6,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { Trophy, Zap, Check } from "lucide-react";
 import { Challenge } from "@/types";
 import { useApi } from "@/hooks/use-api";
+import { PageLoader } from "@/components/ui/page-loader";
 import { ChallengeCard } from "@/features/challenges/challenge-card";
 
 interface UserChallenge {
@@ -105,11 +106,7 @@ export default function ChallengesPage() {
   };
 
   if (loading || fetching || !user) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[#090d10]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   // Calculate stats
